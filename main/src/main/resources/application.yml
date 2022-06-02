@@ -1,0 +1,27 @@
+spring:
+  profiles:
+    include:
+      - rsshubqq
+  cq:
+    plugin-list: #插件列表
+      - com.bot.main.plugin.FilterPlugin
+      - com.bot.rsshubqq.plugin.RssHubPlugin
+      - com.bot.main.plugin.BaseRespondPlugin
+bot:
+  replyGroup: false   #响应群消息
+  replyPrivate: true  #响应私信消息
+  admins:
+    - 451060876
+ping-config:
+  messageCount: 3   #消息记录时间数
+  messageGap: 1000  #消息间隔（ms
+server:
+  port: 8081
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    root: info
+    com.bot.main: info
+rest-template-config:
+  connectionTimeout: 5 #设置网络连接超时（s
+  readTimeout: 60      #设置读取超时（s

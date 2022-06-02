@@ -1,0 +1,23 @@
+﻿logging:
+  level:
+    com.bot.rsshubqq: debug
+translate:
+  appId: "20200322000402814"          #翻译app应用id
+  securityKey: "vUckpxROgnk7m8d5ZUv9" #翻译app对应的密钥
+  url: "https://fanyi-api.baidu.com/api/trans/vip/translate"  #翻译接口url
+  targetLanguage: "zh"  #翻译目标语言
+rsshub:
+  enable: true    #是否启动rss的抓取
+  query-time: 300 #查询间隔时间(s
+  item-pause-time: 5 #每个RssItem查询间隔时间(s
+  dbPath: db/dbFile.json #数据目录
+  tempPath: tmp/  #临时文件存储
+  proxyPort : 10809 #本地Http代理端口
+  rssList:
+    - name: "Twitter-RoN"
+      url: "https://rss.shab.fun/twitter/user/VOIDInteractive/exclude_replies"
+      groups:
+        - 415103457  #RON手残挂靠中心
+        - 1059769975 #测试群
+      translate: true
+      proxy: true

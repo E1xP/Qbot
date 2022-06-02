@@ -1,0 +1,16 @@
+com\bot\rsshubqq\config\TranslateConfig.class
+com\bot\rsshubqq\pojo\RssItem.class
+com\bot\rsshubqq\config\RsshubScheduleConfig.class
+com\bot\rsshubqq\plugin\RssHubPlugin.class
+com\bot\rsshubqq\utils\BreakOnlyOne.class
+com\bot\rsshubqq\controller\RssHubController.class
+META-INF\spring-configuration-metadata.json
+com\bot\rsshubqq\config\RsshubConfig.class
+com\bot\rsshubqq\pojo\RssFeedItem.class
+com\bot\rsshubqq\service\RssHubSendService.class
+com\bot\rsshubqq\service\RssHubService.class
+com\bot\rsshubqq\mapper\RsshubMapper.class
+com\bot\rsshubqq\pojo\TranslateResult.class
+com\bot\rsshubqq\pojo\RssResult.class
+com\bot\rsshubqq\service\TranslateService.class
+com\bot\rsshubqq\utils\MD5.class

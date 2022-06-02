@@ -1,0 +1,83 @@
+{
+  "groups": [
+    {
+      "name": "rsshub",
+      "type": "com.bot.rsshubqq.config.RsshubConfig",
+      "sourceType": "com.bot.rsshubqq.config.RsshubConfig"
+    },
+    {
+      "name": "translate",
+      "type": "com.bot.rsshubqq.config.TranslateConfig",
+      "sourceType": "com.bot.rsshubqq.config.TranslateConfig"
+    }
+  ],
+  "properties": [
+    {
+      "name": "rsshub.db-path",
+      "type": "java.lang.String",
+      "description": "RSS数据库存储位置",
+      "sourceType": "com.bot.rsshubqq.config.RsshubConfig"
+    },
+    {
+      "name": "rsshub.enable",
+      "type": "java.lang.Boolean",
+      "description": "是否开启rsshub的抓取",
+      "sourceType": "com.bot.rsshubqq.config.RsshubConfig"
+    },
+    {
+      "name": "rsshub.item-pause-time",
+      "type": "java.lang.Integer",
+      "description": "RssItem查询间隔时间",
+      "sourceType": "com.bot.rsshubqq.config.RsshubConfig"
+    },
+    {
+      "name": "rsshub.proxy-port",
+      "type": "java.lang.Integer",
+      "description": "图片代理端口",
+      "sourceType": "com.bot.rsshubqq.config.RsshubConfig"
+    },
+    {
+      "name": "rsshub.query-time",
+      "type": "java.lang.Integer",
+      "description": "查询循环时间",
+      "sourceType": "com.bot.rsshubqq.config.RsshubConfig"
+    },
+    {
+      "name": "rsshub.rss-list",
+      "type": "java.util.List<com.bot.rsshubqq.pojo.RssFeedItem>",
+      "description": "RSS的查询Feed与配置",
+      "sourceType": "com.bot.rsshubqq.config.RsshubConfig"
+    },
+    {
+      "name": "rsshub.temp-path",
+      "type": "java.lang.String",
+      "description": "RSS临时文件存储位置",
+      "sourceType": "com.bot.rsshubqq.config.RsshubConfig"
+    },
+    {
+      "name": "translate.app-id",
+      "type": "java.lang.String",
+      "description": "翻译app应用id",
+      "sourceType": "com.bot.rsshubqq.config.TranslateConfig"
+    },
+    {
+      "name": "translate.security-key",
+      "type": "java.lang.String",
+      "description": "翻译app对应的密钥",
+      "sourceType": "com.bot.rsshubqq.config.TranslateConfig"
+    },
+    {
+      "name": "translate.target-language",
+      "type": "java.lang.String",
+      "description": "翻译的目标语言",
+      "sourceType": "com.bot.rsshubqq.config.TranslateConfig"
+    },
+    {
+      "name": "translate.url",
+      "type": "java.lang.String",
+      "description": "翻译接口url",
+      "sourceType": "com.bot.rsshubqq.config.TranslateConfig"
+    }
+  ],
+  "hints": []
+}
