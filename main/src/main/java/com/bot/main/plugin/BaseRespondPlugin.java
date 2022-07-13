@@ -48,7 +48,6 @@ public class BaseRespondPlugin extends CQPlugin {
     public int onPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
         CQUser sender = event.getSender();
         if(botConfig.getAdmins().contains(sender.getUserId())){
-            String message;
             String comToken=event.getMessage().trim().toLowerCase(Locale.ROOT).split(" ")[0];
             switch (comToken){
                 case "./status":
@@ -59,6 +58,7 @@ public class BaseRespondPlugin extends CQPlugin {
                     break;
                 default:
                     onErrorCommandPrivateMessage(cq,event);
+                    break;
             }
             return MESSAGE_BLOCK;
         }
@@ -75,7 +75,6 @@ public class BaseRespondPlugin extends CQPlugin {
     public int onGroupMessage(CoolQ cq, CQGroupMessageEvent event) {
         String comToken=event.getMessage().trim().toLowerCase(Locale.ROOT).split(" ")[0];
         if(event.getMessage().trim().toLowerCase(Locale.ROOT).startsWith("./")) {
-            this.onPingGroupMessage(cq,event);
             switch (comToken){
                 case "./ping":
                     onPingGroupMessage(cq,event);
@@ -124,7 +123,7 @@ public class BaseRespondPlugin extends CQPlugin {
         CQUser sender = event.getSender();
         if (botConfig.getAdmins().contains(sender.getUserId())) {
             log.info("响应Echo" + event);
-            String message = CQCode.at(event.getUserId()) + event.getMessage().substring(event.getMessage().indexOf(" "));
+            String message = event.getMessage().substring(event.getMessage().indexOf(" "));
             cq.sendGroupMsg(event.getGroupId(), message, false);
         }
     }
@@ -164,7 +163,7 @@ public class BaseRespondPlugin extends CQPlugin {
     }
 
     /**
-     * 使用
+     * 当接收到私聊status消息
      * @param cq cqBot实体类
      * @param event 私聊消息事件
      */
