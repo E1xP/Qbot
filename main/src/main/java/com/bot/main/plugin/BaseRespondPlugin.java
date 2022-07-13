@@ -38,6 +38,12 @@ public class BaseRespondPlugin extends CQPlugin {
 
     ArrayList<Long> lastFiveTime=new ArrayList<>();//最后发送时间列表
 
+    /**
+     * 接收到私聊消息
+     * @param cq cqBot实体类
+     * @param event 私聊消息事件
+     * @return 消息状态
+     */
     @Override
     public int onPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
         CQUser sender = event.getSender();
@@ -46,49 +52,126 @@ public class BaseRespondPlugin extends CQPlugin {
             String comToken=event.getMessage().trim().toLowerCase(Locale.ROOT).split(" ")[0];
             switch (comToken){
                 case "./status":
-                    log.info("获取Bot状态: "+event);
-                    message=botService.getBotStatus(cq);
+                    onStatusPrivateMessage(cq,event);
                     break;
                 case "./ping":
-                    log.info("响应Ping: "+event);
-                    message="Pong~";
+                    onPingPrivateMessage(cq,event);
                     break;
                 default:
-                    log.info("错误指令："+event);
-                    message="错误指令："+comToken;
+                    onErrorCommandPrivateMessage(cq,event);
             }
-            cq.sendPrivateMsg(event.getUserId(),message,false);
             return MESSAGE_BLOCK;
         }
         return MESSAGE_IGNORE;
     }
 
     /**
-     * Ping应答
-     * 在 消息间隔*消息总数时间 内能最大能发送 消息间隔 条响应
-     * @param cq cqbot
-     * @param event 获得事件
+     * 接收到群消息
+     * @param cq cqBot实体类
+     * @param event 群消息事件
      * @return 消息状态
      */
     @Override
     public int onGroupMessage(CoolQ cq, CQGroupMessageEvent event) {
-        if(event.getMessage().trim().toLowerCase(Locale.ROOT).contains("./ping")) {
-            //若消息以./ping开头
-            long currentTime=System.currentTimeMillis();
-            //在 消息间隔*消息总数时间 内能最大能发送 消息间隔 条相应
-            if(lastFiveTime.size()<pingConfig.getMessageCount()||lastFiveTime.get(0)+pingConfig.getMessageGap()*pingConfig.getMessageCount()<currentTime) {
-                log.info("响应Ping: "+event);
-                //压入最后一次发送时间
-                lastFiveTime.add(currentTime);
-                if(lastFiveTime.size()>pingConfig.getMessageCount())
-                    lastFiveTime.remove(0);
-                String message = CQCode.at(event.getUserId()) + "Pong!";
-                cq.sendGroupMsg(event.getGroupId(), message, false);
-            }else{
-                log.info("触发限速: "+ event);
+        String comToken=event.getMessage().trim().toLowerCase(Locale.ROOT).split(" ")[0];
+        if(event.getMessage().trim().toLowerCase(Locale.ROOT).startsWith("./")) {
+            this.onPingGroupMessage(cq,event);
+            switch (comToken){
+                case "./ping":
+                    onPingGroupMessage(cq,event);
+                    break;
+                case "./echo":
+                    onEchoGroupMessage(cq,event);
+                    break;
+                default:
+                    onErrorCommandGroupMessage(cq,event);
+                    break;
             }
             return MESSAGE_BLOCK;
         }
         return MESSAGE_IGNORE;
+    }
+
+    /**
+     * 当接收到群内Ping消息
+     * 消息间隔*消息总数时间 内能最大能发送 消息间隔 条响应
+     * @param cq cqBot实体类
+     * @param event 群消息事件
+     */
+    private void onPingGroupMessage(CoolQ cq, CQGroupMessageEvent event){
+        //若消息以./ping开头
+        long currentTime=System.currentTimeMillis();
+        //在 消息间隔*消息总数时间 内能最大能发送 消息间隔 条相应
+        if(lastFiveTime.size()<pingConfig.getMessageCount()||lastFiveTime.get(0)+pingConfig.getMessageGap()*pingConfig.getMessageCount()<currentTime) {
+            log.info("响应Ping: "+event);
+            //压入最后一次发送时间
+            lastFiveTime.add(currentTime);
+            if(lastFiveTime.size()>pingConfig.getMessageCount())
+                lastFiveTime.remove(0);
+            String message = CQCode.at(event.getUserId()) + "Pong!";
+            cq.sendGroupMsg(event.getGroupId(), message, false);
+        }else{
+            log.info("触发限速: "+ event);
+        }
+    }
+
+    /**
+     * 当接收到群内Echo消息
+     * @param cq cqBot实体类
+     * @param event 群消息事件
+     */
+    private void onEchoGroupMessage(CoolQ cq,CQGroupMessageEvent event) {
+        CQUser sender = event.getSender();
+        if (botConfig.getAdmins().contains(sender.getUserId())) {
+            log.info("响应Echo" + event);
+            String message = CQCode.at(event.getUserId()) + event.getMessage().substring(event.getMessage().indexOf(" "));
+            cq.sendGroupMsg(event.getGroupId(), message, false);
+        }
+    }
+
+    /**
+     * 当接收到群内不匹配的指令
+     * @param cq cqBot实体类
+     * @param event 群消息事件
+     */
+    private void onErrorCommandGroupMessage(CoolQ cq,CQGroupMessageEvent event){
+        CQUser sender = event.getSender();
+        String message = CQCode.at(sender.getUserId()) +"指令错误："+ event.getMessage().split(" ")[0];
+        cq.sendGroupMsg(event.getGroupId(), message, false);
+    }
+
+    /**
+     * 当接收到私聊不匹配的指令
+     * @param cq cqBot实体类
+     * @param event 私聊消息事件
+     */
+    private void onErrorCommandPrivateMessage(CoolQ cq,CQPrivateMessageEvent event){
+        CQUser sender = event.getSender();
+        String message="错误指令："+event.getMessage().split(" ")[0];
+        cq.sendPrivateMsg(sender.getUserId(),message,false);
+    }
+
+    /**
+     * 当接收到私聊的Ping指令
+     * @param cq cqBot实体类
+     * @param event 私聊消息事件
+     */
+    private void onPingPrivateMessage(CoolQ cq, CQPrivateMessageEvent event){
+        CQUser sender=event.getSender();
+        log.info("响应Ping: "+event);
+        String message="Pong!";
+        cq.sendPrivateMsg(sender.getUserId(),message,false);
+    }
+
+    /**
+     * 使用
+     * @param cq cqBot实体类
+     * @param event 私聊消息事件
+     */
+    private void onStatusPrivateMessage(CoolQ cq,CQPrivateMessageEvent event){
+        CQUser sender=event.getSender();
+        log.info("响应状态："+event);
+        String message=botService.getBotStatus(cq);
+        cq.sendPrivateMsg(sender.getUserId(),message,false);
     }
 }
