@@ -141,14 +141,4 @@ public class RssHubService implements Runnable {
             rssHubController.notify();
         }
     }
-
-    private void clearTempFile(){
-        File file=new File(tempPath);
-        if(file.exists()){
-            File[] files=file.listFiles();
-            for(File item:files){
-                item.delete();
-            }
-        }
-    }
 }
