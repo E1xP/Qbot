@@ -79,7 +79,6 @@ public class BaseRespondPlugin extends CQPlugin {
     public int onGroupMessage(CoolQ cq, CQGroupMessageEvent event) {
         String comToken=event.getMessage().trim().toLowerCase(Locale.ROOT).split(" ")[0];
         if(event.getMessage().trim().toLowerCase(Locale.ROOT).startsWith("./")) {
-            this.onPingGroupMessage(cq,event);
             switch (comToken){
                 case "./ping":
                     onPingGroupMessage(cq,event);
