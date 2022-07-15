@@ -96,6 +96,7 @@ public class BaseRespondPlugin extends CQPlugin {
         return MESSAGE_IGNORE;
     }
 
+    /*收到群聊消息*/
     /**
      * 当接收到群内Ping消息
      * 消息间隔*消息总数时间 内能最大能发送 消息间隔 条响应
@@ -144,6 +145,7 @@ public class BaseRespondPlugin extends CQPlugin {
         cq.sendGroupMsg(event.getGroupId(), message, false);
     }
 
+    /*收到私聊消息*/
     /**
      * 当接收到私聊不匹配的指令
      * @param cq cqBot实体类
