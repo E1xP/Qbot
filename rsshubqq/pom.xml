@@ -23,12 +23,6 @@
             <artifactId>rome</artifactId>
             <version>1.18.0</version>
         </dependency>
-        <!--Spring-CQ-->
-        <dependency>
-            <groupId>net.lz1998</groupId>
-            <artifactId>spring-cq</artifactId>
-            <version>4.15.0.1</version>
-        </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>

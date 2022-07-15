@@ -50,6 +50,12 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
+        <!--Spring-CQ-->
+        <dependency>
+            <groupId>net.lz1998</groupId>
+            <artifactId>spring-cq</artifactId>
+            <version>4.15.0.1</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
