@@ -2,14 +2,10 @@ package com.bot.rsshubqq.mapper;
 
 import com.bot.rsshubqq.config.RsshubConfig;
 import com.bot.rsshubqq.pojo.RssFeedItem;
-import com.bot.rsshubqq.pojo.RssItem;
 import com.bot.rsshubqq.pojo.RssResult;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;

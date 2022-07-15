@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.lz1998.cq.entity.CQUser;
 import net.lz1998.cq.event.message.CQGroupMessageEvent;
 import net.lz1998.cq.event.message.CQPrivateMessageEvent;
+import net.lz1998.cq.retdata.GroupData;
 import net.lz1998.cq.robot.CQPlugin;
 import net.lz1998.cq.robot.CoolQ;
 import net.lz1998.cq.utils.CQCode;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * @author E1xP@foxmail.com
@@ -48,14 +50,16 @@ public class BaseRespondPlugin extends CQPlugin {
     public int onPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
         CQUser sender = event.getSender();
         if(botConfig.getAdmins().contains(sender.getUserId())){
-            String message;
             String comToken=event.getMessage().trim().toLowerCase(Locale.ROOT).split(" ")[0];
             switch (comToken){
-                case "./status":
+                case "./status"://发送QQBot状态
                     onStatusPrivateMessage(cq,event);
                     break;
-                case "./ping":
+                case "./ping"://发送ping消息
                     onPingPrivateMessage(cq,event);
+                    break;
+                case "./send"://发送群消息
+                    onSendPrivateMessage(cq,event);
                     break;
                 default:
                     onErrorCommandPrivateMessage(cq,event);
@@ -164,7 +168,7 @@ public class BaseRespondPlugin extends CQPlugin {
     }
 
     /**
-     * 使用
+     * 使用当前AI状态
      * @param cq cqBot实体类
      * @param event 私聊消息事件
      */
@@ -173,5 +177,38 @@ public class BaseRespondPlugin extends CQPlugin {
         log.info("响应状态："+event);
         String message=botService.getBotStatus(cq);
         cq.sendPrivateMsg(sender.getUserId(),message,false);
+    }
+
+    /**
+     * 像群发送消息
+     * @param cq cqBot实体类
+     * @param event 私聊消息事件
+     */
+    private void onSendPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
+        CQUser sender = event.getSender();
+        if (botConfig.getAdmins().contains(sender.getUserId())) {
+            log.info("发送群消息" + event);
+            if(event.getMessage().split(" ").length<3){
+                String message="发送群消息指令格式错误：./send 群号 内容";
+                cq.sendPrivateMsg(sender.getUserId(),message,false);
+            }else {
+                String groupStr = event.getMessage().split(" ")[1];
+                try {
+                    long groupId=Long.parseLong(groupStr);
+                    String sendMessage=event.getMessage().split(" [0-9]+ ")[1];
+                    if(cq.getGroupList().getData().stream().map(GroupData::getGroupId).collect(Collectors.toList()).contains(groupId)){
+                        //若已添加该群
+                        cq.sendGroupMsg(groupId,sendMessage,false);
+                    }else{
+                        //未加群
+                        cq.sendPrivateMsg(sender.getUserId(),"未加入该群:"+groupStr,false);
+                    }
+                }catch (NumberFormatException exception){
+                    cq.sendPrivateMsg(sender.getUserId(),"输入群号非数字",false);
+                }catch (IndexOutOfBoundsException exception){
+                    cq.sendPrivateMsg(sender.getUserId(),"找不到发送信息内容",false);
+                }
+            }
+        }
     }
 }
