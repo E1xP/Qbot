@@ -98,7 +98,7 @@ public class BaseRespondPlugin extends CQPlugin {
 
     /*收到群聊消息*/
     /**
-     * 当接收到群内Ping消息
+     * 接收到群内-Ping消息
      * 消息间隔*消息总数时间 内能最大能发送 消息间隔 条响应
      * @param cq cqBot实体类
      * @param event 群消息事件
@@ -121,7 +121,7 @@ public class BaseRespondPlugin extends CQPlugin {
     }
 
     /**
-     * 当接收到群内Echo消息
+     * 接收到群-Echo消息
      * @param cq cqBot实体类
      * @param event 群消息事件
      */
@@ -135,7 +135,7 @@ public class BaseRespondPlugin extends CQPlugin {
     }
 
     /**
-     * 当接收到群内不匹配的指令
+     * 接收到群-不匹配的指令
      * @param cq cqBot实体类
      * @param event 群消息事件
      */
@@ -147,7 +147,7 @@ public class BaseRespondPlugin extends CQPlugin {
 
     /*收到私聊消息*/
     /**
-     * 当接收到私聊不匹配的指令
+     * 接收到私聊-不匹配的指令
      * @param cq cqBot实体类
      * @param event 私聊消息事件
      */
@@ -158,7 +158,7 @@ public class BaseRespondPlugin extends CQPlugin {
     }
 
     /**
-     * 当接收到私聊的Ping指令
+     * 接收到私聊-Ping指令
      * @param cq cqBot实体类
      * @param event 私聊消息事件
      */
@@ -170,7 +170,7 @@ public class BaseRespondPlugin extends CQPlugin {
     }
 
     /**
-     * 使用当前AI状态
+     * 接受到私聊-获取当前BOT状态
      * @param cq cqBot实体类
      * @param event 私聊消息事件
      */
@@ -182,13 +182,13 @@ public class BaseRespondPlugin extends CQPlugin {
     }
 
     /**
-     * 像群发送消息
+     * 接收到私聊-向群发送消息
      * @param cq cqBot实体类
      * @param event 私聊消息事件
      */
     private void onSendPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
         CQUser sender = event.getSender();
-        if (botConfig.getAdmins().contains(sender.getUserId())) {
+        if (botConfig.getAdmins().contains(sender.getUserId())) {//判定是否为管理员
             log.info("发送群消息" + event);
             if(event.getMessage().split(" ").length<3){
                 String message="发送群消息指令格式错误：./send 群号 内容";
