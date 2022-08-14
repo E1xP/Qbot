@@ -12,12 +12,14 @@ rsshub:
   item-pause-time: 5 #每个RssItem查询间隔时间(s
   dbPath: db/dbFile.json #数据目录
   tempPath: tmp/  #临时文件存储
+  urlTempAccess: false #是否开启临时文件访问
+  localUrl: localhost #外部访问域名
+  accessPort: 8081    #外部访问端口
   proxyPort : 10809 #本地Http代理端口
   rssList:
-    - name: "Twitter-RoN"
-      url: "https://rss.shab.fun/twitter/user/VOIDInteractive/exclude_replies"
+    - name: "Bilibili-Longyi"
+      url: "https://rss.shab.fun/bilibili/user/dynamic/1932102"
       groups:
-        - 415103457  #RON手残挂靠中心
         - 1059769975 #测试群
-      translate: true
+      translate: false
       proxy: true

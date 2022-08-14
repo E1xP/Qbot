@@ -6,6 +6,7 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.annotation.Resource;
+import java.net.InetAddress;
 import java.util.Arrays;
 
 /**
@@ -25,10 +26,12 @@ public class MvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        try {
-            registry.addResourceHandler("/image/**").addResourceLocations("file:"+rsshubConfig.getTempPath());
-        }catch (Exception e){
-            log.error(Arrays.toString(e.getStackTrace()));
+        if(rsshubConfig.getUrlTempAccess()) {
+            try {
+                registry.addResourceHandler("/image/**").addResourceLocations("file:" + rsshubConfig.getTempPath());
+            } catch (Exception e) {
+                log.error(Arrays.toString(e.getStackTrace()));
+            }
         }
     }
 }

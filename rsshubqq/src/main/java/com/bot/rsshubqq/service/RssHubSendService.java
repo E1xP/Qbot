@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -280,8 +281,12 @@ public class RssHubSendService implements Runnable{
         String downloadFile=downMedia(mediaUrl);
         if(downloadFile!=null) {
             log.debug(sendName+" = 文件下载到："+downloadFile);
-            message.append("[CQ:image,file=file:///")
-                    .append(downloadFile).append("]");
+            if(rsshubConfig.getUrlTempAccess()) {
+                message.append("[CQ:image,url=").append(rsshubConfig.getLocalUrl()).append(":").append(rsshubConfig.getAccessPort()).append("/image/").append(downloadFile).append("]");
+            }else{
+                message.append("[CQ:image,file=file:///")
+                        .append(downloadFile).append("]");
+            }
         }else {
             log.error(sendName+" = 图片下载失败："+mediaUrl);
             message.append("图片下载失败：").append(mediaUrl);

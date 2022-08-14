@@ -2,6 +2,7 @@ package com.bot.rsshubqq.config;
 
 import com.bot.rsshubqq.pojo.RssFeedItem;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -31,6 +32,12 @@ public class RsshubConfig {
     String dbPath;
     /**RSS临时文件存储位置*/
     String tempPath;
+    /**本地访问URL地址*/
+    String localUrl;
+    /**外部访问端口*/
+    int accessPort;
+    /**是否开启临时文件访问*/
+    Boolean urlTempAccess;
     /**图片代理端口*/
     int proxyPort;
 }
