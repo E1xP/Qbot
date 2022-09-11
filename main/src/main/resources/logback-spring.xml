@@ -13,7 +13,7 @@ configuration 子节点为 appender、logger、root
     <!--用于区分不同应用程序的记录-->
     <contextName>Qbot</contextName>
     <!--日志文件所在目录，如果是tomcat，如下写法日志文件会在则为${TOMCAT_HOME}/bin/logs/目录下-->
-    <property name="LOG_HOME" value="/data/logs"/>
+    <property name="LOG_HOME" value="/data/qbot/logs"/>
 
     <!--控制台-->
     <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">

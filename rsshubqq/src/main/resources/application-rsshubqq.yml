@@ -21,7 +21,7 @@ rsshub:
   proxyPort: 10809 #Http代理端口
   rssList:
     - name: "test"
-      url: "www.baidu.com"
+      url: "https://rss.shab.fun/twitter/user/VOIDInteractive/exclude_replies"
       groups:
         - 1059769975 #测试群
       translate: false
