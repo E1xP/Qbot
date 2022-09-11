@@ -17,7 +17,7 @@ public class BreakOnlyOne {
      * @param sourceStr  要处理的内容
      * @return	返回的结果
      */
-    public static String  multipleLineBreaksKeepOnlyOne(String sourceStr) {
+    public static String onlyOneLineBreak(String sourceStr) {
         String result = "";
         if (sourceStr!= null) {
             Pattern p = Pattern.compile("(\r?\n(\\s*\r?\n)+)");//正则表达式

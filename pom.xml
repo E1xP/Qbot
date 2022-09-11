@@ -80,6 +80,9 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    <build>
+        <finalName>qbot</finalName>
+    </build>
 
 
 

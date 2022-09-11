@@ -12,7 +12,6 @@ import net.lz1998.cq.CQGlobal;
 import net.lz1998.cq.retdata.ApiData;
 import net.lz1998.cq.retdata.MessageData;
 import net.lz1998.cq.robot.CoolQ;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -26,7 +25,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -134,7 +132,7 @@ public class RssHubSendService implements Runnable{
         }
         content+="\n----------------------\n原链接："+sendItem.getLink()
                 +"\n日期："+formatter.format(sendItem.getPubDate());
-        content= BreakOnlyOne.multipleLineBreaksKeepOnlyOne(content);
+        content= BreakOnlyOne.onlyOneLineBreak(content);
         //发送消息
         CoolQ coolQ=null;
         int sendTryCount=0;
@@ -204,7 +202,10 @@ public class RssHubSendService implements Runnable{
             SimpleClientHttpRequestFactory requestFactory=new SimpleClientHttpRequestFactory();
             requestFactory.setConnectTimeout(5*1000);
             requestFactory.setReadTimeout(60*1000);
-            requestFactory.setProxy(new Proxy(Proxy.Type.HTTP,new InetSocketAddress("127.0.0.1",rsshubConfig.getProxyPort())));
+            requestFactory.setProxy(new Proxy(Proxy.Type.HTTP,
+                    new InetSocketAddress(
+                            (rsshubConfig.getProxyUrl()!=null&&!rsshubConfig.getProxyUrl().isEmpty()?rsshubConfig.getProxyUrl():"127.0.0.1"),
+                            rsshubConfig.getProxyPort())));//无代理ip配置默认为127.0.0.1
             restTemplate.setRequestFactory(requestFactory);
         }
         AtomicReference<File> imageFile=new AtomicReference<>();

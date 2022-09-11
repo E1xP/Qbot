@@ -38,6 +38,8 @@ public class RsshubConfig {
     int accessPort;
     /**是否开启临时文件访问*/
     Boolean urlTempAccess;
+    /** 图片代理地址*/
+    String proxyUrl;
     /**图片代理端口*/
     int proxyPort;
 }

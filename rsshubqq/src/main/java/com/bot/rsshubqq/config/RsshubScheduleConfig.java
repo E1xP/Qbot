@@ -2,6 +2,7 @@ package com.bot.rsshubqq.config;
 
 import com.bot.rsshubqq.controller.RssHubController;
 import com.bot.rsshubqq.pojo.RssFeedItem;
+import com.bot.rsshubqq.service.RssHubService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.TaskScheduler;
@@ -50,11 +51,17 @@ public class RsshubScheduleConfig implements SchedulingConfigurer {
                     if(!rssHubController.isPullUnFinish()){
                         log.error("陷入等待检测死锁");
                     }else{
+                        StringBuilder stringBuilder=new StringBuilder();
+                        for(RssHubService item :rssHubController.getThreads()) {
+                            if (!item.isFinished()) {
+                                stringBuilder.append(item.getRssFeedItem().getName()).append(" ");
+                            }
+                        }
                         rssHubController.suspendAll();
                         synchronized (rssHubController){
                             rssHubController.notify();
                         }
-                        log.error("抓取超时至一下个抓取循环（可能抓取间隔过小）");
+                        log.error("抓取超时至一下个抓取循环（可能抓取间隔过小）:"+stringBuilder);
                     }
                 }else{
                     if(rsshubThread==null||!rsshubThread.isAlive()) {

@@ -15,10 +15,11 @@ rsshub:
   urlTempAccess: false #是否开启临时文件访问
   localUrl: localhost #外部访问域名
   accessPort: 8081    #外部访问端口
-  proxyPort : 10809 #本地Http代理端口
+  proxyUrl: "192.168.199.8" #代理地址
+  proxyPort : 10809 #Http代理端口
   rssList:
-    - name: "Bilibili-Longyi"
-      url: "https://rss.shab.fun/bilibili/user/dynamic/1932102"
+    - name: ""
+      url: ""
       groups:
         - 1059769975 #测试群
       translate: false
