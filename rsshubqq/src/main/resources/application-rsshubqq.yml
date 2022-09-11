@@ -7,6 +7,8 @@ translate:
   url: "https://fanyi-api.baidu.com/api/trans/vip/translate"  #翻译接口url
   targetLanguage: "zh"  #翻译目标语言
 rsshub:
+  downloadFailNotify: true #是否在图片下载失败时通知
+  downloadFailNotifier: 451060876 #图片下载失败通知
   enable: true    #是否启动rss的抓取
   query-time: 300 #查询间隔时间(s
   item-pause-time: 5 #每个RssItem查询间隔时间(s
@@ -16,10 +18,10 @@ rsshub:
   localUrl: localhost #外部访问域名
   accessPort: 8081    #外部访问端口
   proxyUrl: "192.168.199.8" #代理地址
-  proxyPort : 10809 #Http代理端口
+  proxyPort: 10809 #Http代理端口
   rssList:
-    - name: ""
-      url: ""
+    - name: "test"
+      url: "www.baidu.com"
       groups:
         - 1059769975 #测试群
       translate: false

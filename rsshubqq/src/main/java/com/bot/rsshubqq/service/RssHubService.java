@@ -2,9 +2,11 @@ package com.bot.rsshubqq.service;
 
 import com.bot.rsshubqq.config.TranslateConfig;
 import com.bot.rsshubqq.controller.RssHubController;
+import com.bot.rsshubqq.mapper.RsshubMapper;
 import com.bot.rsshubqq.pojo.RssFeedItem;
 import com.bot.rsshubqq.pojo.RssItem;
 import com.bot.rsshubqq.pojo.RssResult;
+import com.bot.rsshubqq.utils.RssHubSendServiceFactory;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.FeedException;
@@ -13,13 +15,15 @@ import com.rometools.rome.io.XmlReader;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpMethod;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.File;
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,6 +39,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  **/
 @Slf4j
 @Data
+@Scope("prototype")
+@Service
 public class RssHubService implements Runnable {
 
     RssFeedItem rssFeedItem;
@@ -43,18 +49,24 @@ public class RssHubService implements Runnable {
 
     RssHubController rssHubController;
 
+    @Resource
     TranslateConfig translateConfig;
 
-    String tempPath;
+    @Resource
+    RsshubMapper rsshubMapper;
 
-    boolean finished=false;
+    @Resource
+    RssHubSendServiceFactory rssHubSendServiceFactory;
 
-    public RssHubService(RssFeedItem rssFeedItem, RssResult rssResult,RssHubController rssHubController,TranslateConfig translateConfig,String tempPath) {
+    boolean finished = false;
+
+    public RssHubService() {
+    }
+
+    public void setRssFeedItem(RssFeedItem rssFeedItem) {
         this.rssFeedItem = rssFeedItem;
-        this.rssResult = rssResult;
-        this.rssHubController=rssHubController;
-        this.translateConfig=translateConfig;
-        this.tempPath=tempPath;
+        RssResult rssResult = rsshubMapper.getResult(rssFeedItem);//获取当前的响应结果
+        this.setRssResult(rssResult);
     }
 
     /**
@@ -123,7 +135,7 @@ public class RssHubService implements Runnable {
                  for(RssItem item:sendList){
                      //启动发送线程
                      log.debug(rssFeedItem.getName()+" = 启动发送新消息线程："+item.getLink());
-                     Thread thread=new Thread(new RssHubSendService(rssResult.getTitle(),item,rssFeedItem,translateConfig,rssHubController.getRsshubFeedConfig(),tempPath));
+                     Thread thread = new Thread(rssHubSendServiceFactory.getRssHubSendService(rssResult.getTitle(), item, rssFeedItem));
                      thread.start();
                      if(sendList.size()-1!=sendList.indexOf(item)){
                          //非最后一个
