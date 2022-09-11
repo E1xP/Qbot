@@ -137,36 +137,39 @@ public class RssHubSendService implements Runnable {
         //翻译处理
         if(rssFeedItem.isTranslate()){
             toTranslateMessage=toTranslateMessage.replaceAll("<br>","\n");//将待翻译换行替换为\n
-            toTranslateMessage=toTranslateMessage.replaceAll("</?[?a-zA-Z]+[^><]*>|&[a-zA-Z]{1,10}","");//删除图片或视频链接
+            toTranslateMessage = toTranslateMessage.replaceAll("</?[?a-zA-Z]+[^><]*>|&[a-zA-Z]{1,10}", "");//删除图片或视频链接
             String translated = translate(toTranslateMessage);
-            if(translated!=null) {
-                log.debug(sendName+" = 翻译结果："+translated);
+            if (translated != null) {
+                log.debug(sendName + " = 翻译结果：" + translated);
                 content += "翻译：" + translated;
             }
         }
         //获取图片与视频预览图URL列表
         getMedia(content);
-        content=content.replaceAll("</?[?a-zA-Z]+[^><]*>|&[a-zA-Z]{1,10}","");//删除图片或视频链接
+        content = content.replaceAll("</?[?a-zA-Z]+[^><]*>|&[a-zA-Z]{1,10}", "");//删除图片或视频链接
+        content = BreakOnlyOne.onlyOneLineBreak(content);
+        Msg msg = Msg.builder();
+        msg.text(content);
         //处理媒体图片
         if (imagesUrl.size() != 0 || videosUrl.size() != 0) {
 
             log.debug(sendName + " = 图片链接为：" + imagesUrl);
             log.debug(sendName + " = 视频预览图链接为：" + videosUrl);
 
-            content += "媒体：\n";
-            StringBuilder stringBuilder = new StringBuilder();
+            msg.text("媒体：\n");
             //存在媒体图片
             for (String item : videosUrl) {
-                downAndAdd(item, stringBuilder);
+                downAndAdd(item, msg);
             }
             for (String item : imagesUrl) {
-                downAndAdd(item, stringBuilder);
+                downAndAdd(item, msg);
             }
-            content += stringBuilder;
+            msg.text("\n");
         }
-        content += "\n----------------------\n原链接：" + sendItem.getLink()
-                + "\n日期：" + formatter.format(sendItem.getPubDate());
-        content = BreakOnlyOne.onlyOneLineBreak(content);
+        msg.text("----------------------\n原链接：")
+                .text(sendItem.getLink())
+                .text("\n日期：")
+                .text(formatter.format(sendItem.getPubDate()));
         //发送消息
         Bot bot = null;
         int sendTryCount = 0;
@@ -179,11 +182,11 @@ public class RssHubSendService implements Runnable {
             }
         } while (bot == null && sendTryCount < 5);//仅重试5次
         if (bot != null) {
-            log.debug("开始发送消息：" + sendItem.getLink() + "\n群：" + rssFeedItem.getGroups() + "\n内容：" + content);
+            log.debug("开始发送消息：" + sendItem.getLink() + "\n群：" + rssFeedItem.getGroups() + "\n内容：" + msg.toString());
             int sendCount = 0;
             OnebotApi.SendGroupMsgResp sendGroupMsgResp = null;
             for (long groupId : rssFeedItem.getGroups()) {
-                sendGroupMsgResp = bot.sendGroupMsg(groupId, content, false);
+                sendGroupMsgResp = bot.sendGroupMsg(groupId, msg, false);
                 //发送后判断单个消息
                 if (sendGroupMsgResp != null && sendGroupMsgResp.hasMessageId()) {
                     sendCount++;
@@ -198,7 +201,7 @@ public class RssHubSendService implements Runnable {
             if (sendCount == rssFeedItem.getGroups().size()) {
                 log.info(sendName + " ==>完成发送：" + sendItem.getLink());
             } else {
-                log.error(sendName + " = 发送失败：" + sendItem.getLink() + "\n返还消息：" + sendGroupMsgResp + "\n消息内容：" + content);
+                log.error(sendName + " = 发送失败：" + sendItem.getLink() + "\n返还消息：" + sendGroupMsgResp + "\n消息内容：" + msg.toString());
             }
         }else{
             log.error(sendName+" = 等待Bot5次失败放弃发送："+sendItem.getLink());
@@ -319,22 +322,22 @@ public class RssHubSendService implements Runnable {
 
     /**
      * 下载文件并放入构建图片码
+     *
      * @param mediaUrl 媒体图片URL
-     * @param message 消息StringBuilder
+     * @param message  消息StringBuilder
      */
-    private void downAndAdd(String mediaUrl,StringBuilder message){
-        String downloadFile=downMedia(mediaUrl);
-        if(downloadFile!=null) {
-            log.debug(sendName+" = 文件下载到："+downloadFile);
-            if(rsshubConfig.getUrlTempAccess()) {
-                message.append("[CQ:image,url=").append(rsshubConfig.getLocalUrl()).append(":").append(rsshubConfig.getAccessPort()).append("/image/").append(downloadFile).append("]");
-            }else{
-                message.append("[CQ:image,file=file:///")
-                        .append(downloadFile).append("]");
+    private void downAndAdd(String mediaUrl, Msg message) {
+        String downloadFile = downMedia(mediaUrl);
+        if (downloadFile != null) {
+            log.debug(sendName + " = 文件下载到：" + downloadFile);
+            if (rsshubConfig.getUrlTempAccess()) {
+                message.image(rsshubConfig.getLocalUrl() + ":" + rsshubConfig.getAccessPort() + "/image/" + downloadFile);
+            } else {
+                message.image("file:///" + downloadFile);
             }
-        }else {
-            log.error(sendName+" = 图片下载失败："+mediaUrl);
-            message.append("图片下载失败：").append(mediaUrl);
+        } else {
+            log.error(sendName + " = 图片下载失败：" + mediaUrl);
+            message.text("图片下载失败：").text(mediaUrl);
         }
     }
 }
