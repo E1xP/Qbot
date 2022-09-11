@@ -2,10 +2,10 @@ package com.bot.main.plugin;
 
 import com.bot.main.config.BotConfig;
 import lombok.extern.slf4j.Slf4j;
-import net.lz1998.pbbot.bot.Bot;
-import net.lz1998.pbbot.bot.BotPlugin;
-import onebot.OnebotEvent;
-import org.jetbrains.annotations.NotNull;
+import net.lz1998.cq.event.message.CQGroupMessageEvent;
+import net.lz1998.cq.event.message.CQPrivateMessageEvent;
+import net.lz1998.cq.robot.CQPlugin;
+import net.lz1998.cq.robot.CoolQ;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +22,7 @@ import javax.annotation.Resource;
  **/
 @Component
 @Slf4j
-public class FilterPlugin extends BotPlugin {
+public class FilterPlugin extends CQPlugin {
 
     @Value("${bot.replyGroup}")
     boolean replyGroupFlag;
@@ -33,7 +33,7 @@ public class FilterPlugin extends BotPlugin {
     BotConfig botConfig;
 
     @Override
-    public int onPrivateMessage(@NotNull Bot bot, @NotNull OnebotEvent.PrivateMessageEvent event) {
+    public int onPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
         if (replyPrivateFlag) {
             //开启信息回复
             return MESSAGE_IGNORE;
@@ -44,8 +44,8 @@ public class FilterPlugin extends BotPlugin {
     }
 
     @Override
-    public int onGroupMessage(@NotNull Bot bot, @NotNull OnebotEvent.GroupMessageEvent event) {
-        if (replyGroupFlag && event.getRawMessage().trim().startsWith("./")) {
+    public int onGroupMessage(CoolQ cq, CQGroupMessageEvent event) {
+        if (replyGroupFlag && event.getMessage().trim().startsWith("./")) {
             //开启信息回复且为指令
             return MESSAGE_IGNORE;
         } else {

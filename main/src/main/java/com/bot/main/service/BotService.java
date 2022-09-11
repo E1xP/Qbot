@@ -1,7 +1,7 @@
 package com.bot.main.service;
 
 import com.bot.utils.Time;
-import net.lz1998.pbbot.bot.Bot;
+import net.lz1998.cq.robot.CoolQ;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,11 +18,12 @@ public class BotService {
     /**
      * 获取当前Bot运行状态
      *
-     * @param bot CqBot
+     * @param cq CqBot
      * @return 运行状态文本
      */
-    public String getBotStatus(Bot bot) {
-        return "当前登录账号：" + bot.getLoginInfo().getUserId() + "\n" +
+    public String getBotStatus(CoolQ cq) {
+        return "当前登录账号：" + cq.getLoginInfo().getData().getUser_id() + "\n" +
+                "当前HTTP API插件情况：" + (cq.getStatus().getData().isAppGood() ? "正常" : "异常") + "\n" +
                 "当前时间：" + Time.getCurrentTime();
     }
 }

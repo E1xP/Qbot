@@ -4,12 +4,13 @@ import com.bot.main.config.BotConfig;
 import com.bot.main.config.PingConfig;
 import com.bot.main.service.BotService;
 import lombok.extern.slf4j.Slf4j;
-import net.lz1998.pbbot.bot.Bot;
-import net.lz1998.pbbot.bot.BotPlugin;
-import net.lz1998.pbbot.utils.Msg;
-import onebot.OnebotApi;
-import onebot.OnebotEvent;
-import org.jetbrains.annotations.NotNull;
+import net.lz1998.cq.entity.CQUser;
+import net.lz1998.cq.event.message.CQGroupMessageEvent;
+import net.lz1998.cq.event.message.CQPrivateMessageEvent;
+import net.lz1998.cq.retdata.GroupData;
+import net.lz1998.cq.robot.CQPlugin;
+import net.lz1998.cq.robot.CoolQ;
+import net.lz1998.cq.utils.CQCode;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
  **/
 @Component
 @Slf4j
-public class BaseRespondPlugin extends BotPlugin {
+public class BaseRespondPlugin extends CQPlugin {
 
     @Resource
     BotService botService;//Bot服务
@@ -43,26 +44,27 @@ public class BaseRespondPlugin extends BotPlugin {
     /**
      * 接收到私聊消息
      *
-     * @param bot   botBot实体类
+     * @param cq    cqBot实体类
      * @param event 私聊消息事件
      * @return 消息状态
      */
     @Override
-    public int onPrivateMessage(@NotNull Bot bot, OnebotEvent.PrivateMessageEvent event) {
-        if (botConfig.getAdmins().contains(event.getUserId())) {
-            String comToken = event.getRawMessage().trim().toLowerCase(Locale.ROOT).split(" ")[0];
+    public int onPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
+        CQUser sender = event.getSender();
+        if (botConfig.getAdmins().contains(sender.getUserId())) {
+            String comToken = event.getMessage().trim().toLowerCase(Locale.ROOT).split(" ")[0];
             switch (comToken) {
                 case "./status"://发送QQBot状态
-                    onStatusPrivateMessage(bot, event);
+                    onStatusPrivateMessage(cq, event);
                     break;
                 case "./ping"://发送ping消息
-                    onPingPrivateMessage(bot, event);
+                    onPingPrivateMessage(cq, event);
                     break;
                 case "./send"://发送群消息
-                    onSendPrivateMessage(bot, event);
+                    onSendPrivateMessage(cq, event);
                     break;
                 default:
-                    onErrorCommandPrivateMessage(bot, event);
+                    onErrorCommandPrivateMessage(cq,event);
             }
             return MESSAGE_BLOCK;
         }
@@ -72,23 +74,23 @@ public class BaseRespondPlugin extends BotPlugin {
     /**
      * 接收到群消息
      *
-     * @param bot   botBot实体类
+     * @param cq    cqBot实体类
      * @param event 群消息事件
      * @return 消息状态
      */
     @Override
-    public int onGroupMessage(@NotNull Bot bot, OnebotEvent.GroupMessageEvent event) {
-        String comToken = event.getRawMessage().trim().toLowerCase(Locale.ROOT).split(" ")[0];
-        if (event.getRawMessage().trim().toLowerCase(Locale.ROOT).startsWith("./")) {
+    public int onGroupMessage(CoolQ cq, CQGroupMessageEvent event) {
+        String comToken = event.getMessage().trim().toLowerCase(Locale.ROOT).split(" ")[0];
+        if (event.getMessage().trim().toLowerCase(Locale.ROOT).startsWith("./")) {
             switch (comToken) {
                 case "./ping":
-                    onPingGroupMessage(bot, event);
+                    onPingGroupMessage(cq, event);
                     break;
                 case "./echo":
-                    onEchoGroupMessage(bot, event);
+                    onEchoGroupMessage(cq, event);
                     break;
                 default:
-                    onErrorCommandGroupMessage(bot, event);
+                    onErrorCommandGroupMessage(cq, event);
                     break;
             }
             return MESSAGE_BLOCK;
@@ -102,10 +104,10 @@ public class BaseRespondPlugin extends BotPlugin {
      * 接收到群内-Ping消息
      * 消息间隔*消息总数时间 内能最大能发送 消息间隔 条响应
      *
-     * @param bot   botBot实体类
+     * @param cq    cqBot实体类
      * @param event 群消息事件
      */
-    private void onPingGroupMessage(Bot bot, OnebotEvent.GroupMessageEvent event) {
+    private void onPingGroupMessage(CoolQ cq, CQGroupMessageEvent event) {
         //若消息以./ping开头
         long currentTime = System.currentTimeMillis();
         //在 消息间隔*消息总数时间 内能最大能发送 消息间隔 条相应
@@ -115,8 +117,8 @@ public class BaseRespondPlugin extends BotPlugin {
             lastFiveTime.add(currentTime);
             if (lastFiveTime.size() > pingConfig.getMessageCount())
                 lastFiveTime.remove(0);
-            Msg msg = Msg.builder().reply(event.getMessageId()).text("Pong!");
-            bot.sendGroupMsg(event.getGroupId(), msg, false);
+            String message = CQCode.at(event.getUserId()) + "Pong!";
+            cq.sendGroupMsg(event.getGroupId(), message, false);
         } else {
             log.info("触发限速: " + event);
         }
@@ -125,26 +127,28 @@ public class BaseRespondPlugin extends BotPlugin {
     /**
      * 接收到群-Echo消息
      *
-     * @param bot   botBot实体类
+     * @param cq    cqBot实体类
      * @param event 群消息事件
      */
-    private void onEchoGroupMessage(Bot bot, OnebotEvent.GroupMessageEvent event) {
-        if (botConfig.getAdmins().contains(event.getUserId())) {
+    private void onEchoGroupMessage(CoolQ cq, CQGroupMessageEvent event) {
+        CQUser sender = event.getSender();
+        if (botConfig.getAdmins().contains(sender.getUserId())) {
             log.info("响应Echo" + event);
-            Msg msg = Msg.builder().text(event.getRawMessage().substring(event.getRawMessage().indexOf(" ")));
-            bot.sendGroupMsg(event.getGroupId(), msg, false);
+            String message = event.getMessage().substring(event.getMessage().indexOf(" "));
+            cq.sendGroupMsg(event.getGroupId(), message, false);
         }
     }
 
     /**
      * 接收到群-不匹配的指令
      *
-     * @param bot   botBot实体类
+     * @param cq    cqBot实体类
      * @param event 群消息事件
      */
-    private void onErrorCommandGroupMessage(Bot bot, OnebotEvent.GroupMessageEvent event) {
-        Msg msg = Msg.builder().reply(event.getMessageId()).text("指令错误：").text(event.getRawMessage().split(" ")[0]);
-        bot.sendGroupMsg(event.getGroupId(), msg, false);
+    private void onErrorCommandGroupMessage(CoolQ cq, CQGroupMessageEvent event) {
+        CQUser sender = event.getSender();
+        String message = CQCode.at(sender.getUserId()) + "指令错误：" + event.getMessage().split(" ")[0];
+        cq.sendGroupMsg(event.getGroupId(), message, false);
     }
 
     /*收到私聊消息*/
@@ -152,66 +156,70 @@ public class BaseRespondPlugin extends BotPlugin {
     /**
      * 接收到私聊-不匹配的指令
      *
-     * @param bot   botBot实体类
+     * @param cq    cqBot实体类
      * @param event 私聊消息事件
      */
-    private void onErrorCommandPrivateMessage(Bot bot, OnebotEvent.PrivateMessageEvent event) {
-        String message = "错误指令：" + event.getRawMessage().split(" ")[0];
-        bot.sendPrivateMsg(event.getUserId(), message, false);
+    private void onErrorCommandPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
+        CQUser sender = event.getSender();
+        String message = "错误指令：" + event.getMessage().split(" ")[0];
+        cq.sendPrivateMsg(sender.getUserId(), message, false);
     }
 
     /**
      * 接收到私聊-Ping指令
      *
-     * @param bot   botBot实体类
+     * @param cq    cqBot实体类
      * @param event 私聊消息事件
      */
-    private void onPingPrivateMessage(Bot bot, OnebotEvent.PrivateMessageEvent event) {
+    private void onPingPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
+        CQUser sender = event.getSender();
         log.info("响应Ping: " + event);
         String message = "Pong!";
-        bot.sendPrivateMsg(event.getUserId(), message, false);
+        cq.sendPrivateMsg(sender.getUserId(), message, false);
     }
 
     /**
      * 接受到私聊-获取当前BOT状态
      *
-     * @param bot   botBot实体类
+     * @param cq    cqBot实体类
      * @param event 私聊消息事件
      */
-    private void onStatusPrivateMessage(Bot bot, OnebotEvent.PrivateMessageEvent event) {
+    private void onStatusPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
+        CQUser sender = event.getSender();
         log.info("响应状态：" + event);
-        String message = botService.getBotStatus(bot);
-        bot.sendPrivateMsg(event.getUserId(), message, false);
+        String message = botService.getBotStatus(cq);
+        cq.sendPrivateMsg(sender.getUserId(), message, false);
     }
 
     /**
      * 接收到私聊-向群发送消息
      *
-     * @param bot   botBot实体类
+     * @param cq    cqBot实体类
      * @param event 私聊消息事件
      */
-    private void onSendPrivateMessage(Bot bot, OnebotEvent.PrivateMessageEvent event) {
-        if (botConfig.getAdmins().contains(event.getUserId())) {//判定是否为管理员
+    private void onSendPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
+        CQUser sender = event.getSender();
+        if (botConfig.getAdmins().contains(sender.getUserId())) {//判定是否为管理员
             log.info("发送群消息" + event);
-            if (event.getRawMessage().split(" ").length < 3) {
+            if (event.getMessage().split(" ").length < 3) {
                 String message = "发送群消息指令格式错误：./send 群号 内容";
-                bot.sendPrivateMsg(event.getUserId(), message, false);
+                cq.sendPrivateMsg(sender.getUserId(), message, false);
             } else {
-                String groupStr = event.getRawMessage().split(" ")[1];
+                String groupStr = event.getMessage().split(" ")[1];
                 try {
                     long groupId = Long.parseLong(groupStr);
-                    String sendMessage = event.getRawMessage().split(" [0-9]+ ")[1];
-                    if (bot.getGroupList().getGroupList().stream().map(OnebotApi.GetGroupListResp.Group::getGroupId).collect(Collectors.toList()).contains(groupId)) {
+                    String sendMessage = event.getMessage().split(" [0-9]+ ")[1];
+                    if (cq.getGroupList().getData().stream().map(GroupData::getGroupId).collect(Collectors.toList()).contains(groupId)) {
                         //若已添加该群
-                        bot.sendGroupMsg(groupId, sendMessage, false);
+                        cq.sendGroupMsg(groupId, sendMessage, false);
                     } else {
                         //未加群
-                        bot.sendPrivateMsg(event.getUserId(), "未加入该群:" + groupStr, false);
+                        cq.sendPrivateMsg(sender.getUserId(), "未加入该群:" + groupStr, false);
                     }
                 } catch (NumberFormatException exception) {
-                    bot.sendPrivateMsg(event.getUserId(), "输入群号非数字", false);
+                    cq.sendPrivateMsg(sender.getUserId(), "输入群号非数字", false);
                 } catch (IndexOutOfBoundsException exception) {
-                    bot.sendPrivateMsg(event.getUserId(), "找不到发送信息内容", false);
+                    cq.sendPrivateMsg(sender.getUserId(),"找不到发送信息内容",false);
                 }
             }
         }

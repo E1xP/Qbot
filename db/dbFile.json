@@ -1,14 +1,21 @@
 {
-  "Twitter-SandStorm" : {
-    "name" : "Twitter-SandStorm",
-    "lastSendDate" : "2022-02-22T19:23:54.000+00:00",
-    "rssItemList" : [ {
-      "description" : "Happy Two's-day everyone! 02-02-2222<br><br>\uD83D\uDCA5 Limited time game mode \"Danger Close\" starts today and runs until March 8. Get in close, but be careful. Corpses explode.<br><img style=\"\" src=\"https://pbs.twimg.com/media/FMOVeB-VQAQ-55O?format=jpg&#38;name=orig\" referrerpolicy=\"no-referrer\">",
-      "link" : "https://twitter.com/InsurgencyGame/status/1496204116967649286",
-      "pubDate" : "2022-02-22T19:23:54.000+00:00"
-    }, {
-      "description" : "RT Focus Entertainment<br>Tag your best coop buddy\uD83E\uDD1D\uD83C\uDFAE",
-      "link" : "https://twitter.com/Focus_entmt/status/1494340867376697348",
+  "": {
+    "name": "",
+    "lastSendDate": null,
+    "rssItemList": null
+  },
+  "Twitter-SandStorm": {
+    "name": "Twitter-SandStorm",
+    "lastSendDate": "2022-02-22T19:23:54.000+00:00",
+    "rssItemList": [
+      {
+        "description": "Happy Two's-day everyone! 02-02-2222<br><br>\uD83D\uDCA5 Limited time game mode \"Danger Close\" starts today and runs until March 8. Get in close, but be careful. Corpses explode.<br><img style=\"\" src=\"https://pbs.twimg.com/media/FMOVeB-VQAQ-55O?format=jpg&#38;name=orig\" referrerpolicy=\"no-referrer\">",
+        "link": "https://twitter.com/InsurgencyGame/status/1496204116967649286",
+        "pubDate": "2022-02-22T19:23:54.000+00:00"
+      },
+      {
+        "description": "RT Focus Entertainment<br>Tag your best coop buddy\uD83E\uDD1D\uD83C\uDFAE",
+        "link": "https://twitter.com/Focus_entmt/status/1494340867376697348",
       "pubDate" : "2022-02-17T16:00:00.000+00:00"
     }, {
       "description" : "Hello community!<br>A few things this week. We are aware that:<br><br>\uD83D\uDEA8 There is an issue with EAC kicking players.<br>\uD83D\uDEA8 Cosmetic changes to the Alpha AK broke scavenging mags.<br>\uD83D\uDEA8 Incendiary grenades that explode while in motion de-spawn.<br><br>These issues (and others) are being worked on. \uD83D\uDC96",

@@ -1,9 +1,9 @@
 package com.bot.rsshubqq.plugin;
 
-import net.lz1998.pbbot.bot.Bot;
-import net.lz1998.pbbot.bot.BotPlugin;
-import onebot.OnebotEvent;
-import org.jetbrains.annotations.NotNull;
+import net.lz1998.cq.event.message.CQGroupMessageEvent;
+import net.lz1998.cq.event.message.CQPrivateMessageEvent;
+import net.lz1998.cq.robot.CQPlugin;
+import net.lz1998.cq.robot.CoolQ;
 import org.springframework.stereotype.Component;
 
 
@@ -16,15 +16,15 @@ import org.springframework.stereotype.Component;
  * @Date 2022/2/18 下午 2:57
  **/
 @Component
-public class RssHubPlugin extends BotPlugin {
+public class RssHubPlugin extends CQPlugin {
 
     @Override
-    public int onGroupMessage(@NotNull Bot bot, @NotNull OnebotEvent.GroupMessageEvent event) {
-        return super.onGroupMessage(bot, event);
+    public int onGroupMessage(CoolQ cq, CQGroupMessageEvent event) {
+        return super.onGroupMessage(cq, event);
     }
 
     @Override
-    public int onPrivateMessage(@NotNull Bot bot, @NotNull OnebotEvent.PrivateMessageEvent event) {
-        return super.onPrivateMessage(bot, event);
+    public int onPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
+        return super.onPrivateMessage(cq, event);
     }
 }
