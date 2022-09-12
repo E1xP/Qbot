@@ -27,6 +27,7 @@ configuration 子节点为 appender、logger、root
 
     <!--滚动文件-->
     <appender name="infoFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/main/${APP_NAME}.log</file>
         <!-- ThresholdFilter:临界值过滤器，过滤掉 TRACE 和 DEBUG 级别的日志 -->
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
@@ -59,6 +60,7 @@ configuration 子节点为 appender、logger、root
 
     <!--滚动文件-->
     <appender name="rsshubqqinfo" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/rsshubqq/${APP_NAME}.log</file>
         <!-- ThresholdFilter:临界值过滤器，过滤掉 TRACE 和 DEBUG 级别的日志 -->
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
