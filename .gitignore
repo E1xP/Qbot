@@ -26,3 +26,8 @@ target/
 *.rar
 /utils/target/
 /rsshubqq/target/
+/main/target/
+/.idea/
+/db/
+/tmp/
+/main/.mvn/
