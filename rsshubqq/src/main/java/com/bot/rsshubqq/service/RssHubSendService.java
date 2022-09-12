@@ -310,7 +310,7 @@ public class RssHubSendService implements Runnable {
         if(downloadFile!=null) {
             log.debug(sendName+" = 文件下载到："+downloadFile);
             if(rsshubConfig.getUrlTempAccess()) {
-                message.append("[CQ:image,url=").append(rsshubConfig.getLocalUrl()).append(":").append(rsshubConfig.getAccessPort()).append("/image/").append(downloadFile).append("]");
+                message.append("[CQ:image,file=").append(rsshubConfig.getLocalUrl()).append(":").append(rsshubConfig.getAccessPort()).append("/image/").append(downloadFile).append("]");
             }else{
                 message.append("[CQ:image,file=file:///")
                         .append(downloadFile).append("]");
