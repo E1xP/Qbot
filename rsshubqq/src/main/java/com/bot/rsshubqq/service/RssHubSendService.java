@@ -219,19 +219,20 @@ public class RssHubSendService implements Runnable {
 
     /**
      * 下载媒体图片
+     *
      * @param mediaUrl 媒体Url
-     * @return 存储路径
+     * @return 文件实体
      */
-    private String downMedia(String mediaUrl){
-        RestTemplate restTemplate=new RestTemplate();
-        if(rssFeedItem.isProxy()){
+    private AtomicReference<File> downMedia(String mediaUrl) {
+        RestTemplate restTemplate = new RestTemplate();
+        if (rssFeedItem.isProxy()) {
             //设置图片下载代理
-            SimpleClientHttpRequestFactory requestFactory=new SimpleClientHttpRequestFactory();
-            requestFactory.setConnectTimeout(5*1000);
-            requestFactory.setReadTimeout(60*1000);
+            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+            requestFactory.setConnectTimeout(5 * 1000);
+            requestFactory.setReadTimeout(60 * 1000);
             requestFactory.setProxy(new Proxy(Proxy.Type.HTTP,
                     new InetSocketAddress(
-                            (rsshubConfig.getProxyUrl()!=null&&!rsshubConfig.getProxyUrl().isEmpty()?rsshubConfig.getProxyUrl():"127.0.0.1"),
+                            (rsshubConfig.getProxyUrl() != null && !rsshubConfig.getProxyUrl().isEmpty() ? rsshubConfig.getProxyUrl() : "127.0.0.1"),
                             rsshubConfig.getProxyPort())));//无代理ip配置默认为127.0.0.1
             restTemplate.setRequestFactory(requestFactory);
         }
@@ -273,7 +274,7 @@ public class RssHubSendService implements Runnable {
         }
         if(imageFile.get()!=null) {
             //若文件成功下载
-            return imageFile.get().getAbsolutePath();
+            return imageFile;
         }
         return null;
     }
@@ -306,14 +307,14 @@ public class RssHubSendService implements Runnable {
      * @param message 消息StringBuilder
      */
     private void downAndAdd(String mediaUrl,StringBuilder message){
-        String downloadFile=downMedia(mediaUrl);
+        AtomicReference<File> downloadFile = downMedia(mediaUrl);
         if(downloadFile!=null) {
             log.debug(sendName+" = 文件下载到："+downloadFile);
             if(rsshubConfig.getUrlTempAccess()) {
-                message.append("[CQ:image,file=").append(rsshubConfig.getLocalUrl()).append(":").append(rsshubConfig.getAccessPort()).append("/image/").append(downloadFile).append("]");
+                message.append("[CQ:image,file=").append(rsshubConfig.getLocalUrl()).append(":").append(rsshubConfig.getAccessPort()).append("/image/").append(downloadFile.get().getName()).append("]");
             }else{
                 message.append("[CQ:image,file=file:///")
-                        .append(downloadFile).append("]");
+                        .append(downloadFile.get().getAbsolutePath()).append("]");
             }
         }else {
             log.error(sendName+" = 图片下载失败："+mediaUrl);
