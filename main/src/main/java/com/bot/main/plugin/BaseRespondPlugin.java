@@ -3,6 +3,7 @@ package com.bot.main.plugin;
 import com.bot.main.config.BotConfig;
 import com.bot.main.config.PingConfig;
 import com.bot.main.service.BotService;
+import com.bot.utils.CQCodeExtend;
 import lombok.extern.slf4j.Slf4j;
 import net.lz1998.cq.entity.CQUser;
 import net.lz1998.cq.event.message.CQGroupMessageEvent;
@@ -117,7 +118,7 @@ public class BaseRespondPlugin extends CQPlugin {
             lastFiveTime.add(currentTime);
             if (lastFiveTime.size() > pingConfig.getMessageCount())
                 lastFiveTime.remove(0);
-            String message = CQCode.at(event.getUserId()) + "Pong!";
+            String message = CQCodeExtend.reply(event.getMessageId()) + "Pong!";
             cq.sendGroupMsg(event.getGroupId(), message, false);
         } else {
             log.info("触发限速: " + event);
