@@ -67,13 +67,15 @@ public class RsshubMapper {
      */
     public void save(){
         try {
-            File saveFile=new File(rsshubConfig.getDbPath());
-            if(!saveFile.getParentFile().exists()){
+            File saveFile = new File(rsshubConfig.getDbPath());
+            if (!saveFile.getParentFile().exists()) {
                 //若目录不存在
                 saveFile.getParentFile().mkdirs();
             }
             FileOutputStream fileOut = new FileOutputStream(rsshubConfig.getDbPath());
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(fileOut, fileEntity);
+            synchronized (this) {
+                objectMapper.writerWithDefaultPrettyPrinter().writeValue(fileOut, fileEntity);
+            }
             fileOut.close();
             log.debug("已保存到:" + rsshubConfig.getDbPath());
         }catch(FileNotFoundException e){
