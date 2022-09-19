@@ -11,7 +11,7 @@ import java.util.Map;
  * @version 1.0
  * @PACKAGE_NAME com.bot.rsshubqq.pojo
  * @CLASS_NAME FileEntity
- * @Description TODO
+ * @Description TODO 存储文件实体类
  * @Date 2022/9/19 019 下午 10:02
  **/
 @Data
