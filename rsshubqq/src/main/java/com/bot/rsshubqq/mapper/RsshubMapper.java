@@ -1,18 +1,17 @@
 package com.bot.rsshubqq.mapper;
 
 import com.bot.rsshubqq.config.RsshubConfig;
+import com.bot.rsshubqq.pojo.FileEntity;
 import com.bot.rsshubqq.pojo.RssFeedItem;
 import com.bot.rsshubqq.pojo.RssResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.MapType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.*;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -25,6 +24,7 @@ import java.util.Map;
  **/
 @Component
 @Slf4j
+@Data
 @DependsOn({"rsshubConfig"})
 public class RsshubMapper {
 
@@ -34,7 +34,7 @@ public class RsshubMapper {
     @Resource
     private ObjectMapper objectMapper;
 
-    private Map<String, RssResult> resultMap;
+    private FileEntity fileEntity;
 
     /**
      * 构造函数
@@ -43,8 +43,8 @@ public class RsshubMapper {
      */
     public RsshubMapper(RsshubConfig rsshubConfig,ObjectMapper objectMapper){
         this.rsshubConfig=rsshubConfig;
-        this.objectMapper=objectMapper;
-        resultMap= new HashMap<>();
+        this.objectMapper = objectMapper;
+        fileEntity = new FileEntity();
         this.load();
     }
 
@@ -54,10 +54,10 @@ public class RsshubMapper {
      * @return 上次Rss抓取结果，若不存在则创建
      */
     public RssResult getResult(RssFeedItem rssFeedItem){
-        RssResult rssResult=resultMap.get(rssFeedItem.getName());
+        RssResult rssResult = fileEntity.getResultMap().get(rssFeedItem.getName());
         if(rssResult==null){
-            rssResult=new RssResult(rssFeedItem);
-            resultMap.put(rssResult.getName(),rssResult);
+            rssResult = new RssResult(rssFeedItem);
+            fileEntity.getResultMap().put(rssResult.getName(), rssResult);
         }
         return rssResult;
     }
@@ -73,7 +73,7 @@ public class RsshubMapper {
                 saveFile.getParentFile().mkdirs();
             }
             FileOutputStream fileOut = new FileOutputStream(rsshubConfig.getDbPath());
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(fileOut,resultMap);
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(fileOut, fileEntity);
             fileOut.close();
             log.debug("已保存到:" + rsshubConfig.getDbPath());
         }catch(FileNotFoundException e){
@@ -88,10 +88,8 @@ public class RsshubMapper {
      */
     public void load(){
         try {
-            TypeFactory typeFactory=objectMapper.getTypeFactory();
-            MapType mapType=typeFactory.constructMapType(HashMap.class,String.class,RssResult.class);
             FileInputStream fileIn = new FileInputStream(rsshubConfig.getDbPath());
-            resultMap=objectMapper.readValue(fileIn,mapType);
+            fileEntity = objectMapper.readValue(fileIn, FileEntity.class);
             fileIn.close();
             log.info("初始加载DB成功-文件路径："+rsshubConfig.getDbPath());
         } catch (FileNotFoundException e) {//若无该文件夹
@@ -102,10 +100,10 @@ public class RsshubMapper {
     }
 
     public Map<String, RssResult> getResultMap() {
-        return resultMap;
+        return fileEntity.getResultMap();
     }
 
     public void setResultMap(Map<String, RssResult> resultMap) {
-        this.resultMap = resultMap;
+        fileEntity.setResultMap(resultMap);
     }
 }
