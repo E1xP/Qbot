@@ -16,12 +16,24 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "translate")
 public class TranslateConfig {
-    /** 翻译app应用id */
+    /**
+     * 翻译app应用id
+     */
     String appId;
-    /** 翻译app对应的密钥 */
+    /**
+     * 翻译app对应的密钥
+     */
     String securityKey;
-    /**翻译接口url*/
+    /**
+     * 翻译接口url
+     */
     String url;
-    /**翻译的目标语言*/
+    /**
+     * 翻译的目标语言
+     */
     String targetLanguage;
+    /**
+     * 使用什么接口
+     */
+    String apiName;
 }

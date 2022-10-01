@@ -14,10 +14,12 @@ import java.util.HashMap;
  * @Date 2022/2/27 下午 3:33
  **/
 @Data
-public class TranslateResult {
+public class BaiduTranslateResult {
     String from;
     String to;
-    int error_code=0;
-    ArrayList<HashMap<String,String>> trans_result;
-    public TranslateResult(){}
+    int error_code = 0;
+    ArrayList<HashMap<String, String>> trans_result;
+
+    public BaiduTranslateResult() {
+    }
 }
