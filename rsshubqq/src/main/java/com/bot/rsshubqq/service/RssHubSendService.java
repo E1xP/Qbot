@@ -129,10 +129,10 @@ public class RssHubSendService implements Runnable {
         content = content.replaceAll("<br>","\n");//将换行替换为\n
         //翻译处理
         if(rssFeedItem.isTranslate()){
-            toTranslateMessage=toTranslateMessage.replaceAll("</?[?a-zA-Z]+[^><]*>|&[a-zA-Z]{1,10}","");//删除图片或视频链接
+            toTranslateMessage = toTranslateMessage.replaceAll("<br>", "\n");//将待翻译换行替换为\n
+            toTranslateMessage = toTranslateMessage.replaceAll("</?[?a-zA-Z]+[^><]*>|&[a-zA-Z]{1,10}", "");//删除图片或视频链接
             String translated = translate(toTranslateMessage);
             if(translated!=null) {
-                translated = translated.replaceAll("<br>", "\n");//将待翻译换行替换为\n
                 log.debug(sendName + " = 翻译结果：" + translated);
                 content += "翻译：" + translated;
             }

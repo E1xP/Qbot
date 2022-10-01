@@ -78,6 +78,7 @@ public class TranslateService {
         headers.setContentType(mediaType);
         headers.add("Accept", MediaType.APPLICATION_JSON.toString());
         JSONObject requestMap = new JSONObject();
+        message = message.replace("\n", "/n");
         requestMap.put("text", message);
         requestMap.put("source_lang", from);
         requestMap.put("target_lang", to);
@@ -87,7 +88,9 @@ public class TranslateService {
         RestTemplate restTemplate = new RestTemplate();
         DeeplTranslateResult result = restTemplate.postForObject(translateConfig.getUrl(), httpEntity, DeeplTranslateResult.class);
         if (result.getCode() == 200) {
-            return result.getData();
+            String data = result.getData();
+            data = data.replace("/n", "\n") + "\n";
+            return data;
         } else {
             log.error("翻译错误:" + result.getCode() + " " + result.getMsg());
             return null;
