@@ -1,10 +1,14 @@
 package com.bot.rsshubqq.service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.bot.rsshubqq.config.TranslateConfig;
 import com.bot.rsshubqq.pojo.BaiduTranslateResult;
 import com.bot.rsshubqq.pojo.DeeplTranslateResult;
 import com.bot.rsshubqq.utils.MD5;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
@@ -69,14 +73,19 @@ public class TranslateService {
     private static String deepl(String message, String from, String to, TranslateConfig translateConfig) {
         //构造请求参数
         MultiValueMap<String, String> params = new LinkedMultiValueMap<String, String>();
-        params.add("text", message);
-        params.add("source_lang", from);
-        params.add("target_lang", to);
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(translateConfig.getUrl());
-        URI uri = builder.queryParams(params).build().encode().toUri();
-        log.debug("翻译构造的URI为：" + String.valueOf(uri));
+        HttpHeaders headers = new HttpHeaders();
+        MediaType mediaType = MediaType.parseMediaType("application/json");
+        headers.setContentType(mediaType);
+        headers.add("Accept", MediaType.APPLICATION_JSON.toString());
+        JSONObject requestMap = new JSONObject();
+        requestMap.put("text", message);
+        requestMap.put("source_lang", from);
+        requestMap.put("target_lang", to);
+        HttpEntity<JSONObject> httpEntity = new HttpEntity<>(requestMap, headers);
+
+        log.debug("翻译构造的URI为：" + String.valueOf(translateConfig.getUrl()) + requestMap.toString());
         RestTemplate restTemplate = new RestTemplate();
-        DeeplTranslateResult result = restTemplate.getForObject(uri, DeeplTranslateResult.class);
+        DeeplTranslateResult result = restTemplate.postForObject(translateConfig.getUrl(), httpEntity, DeeplTranslateResult.class);
         if (result.getCode() == 200) {
             return result.getData();
         } else {
