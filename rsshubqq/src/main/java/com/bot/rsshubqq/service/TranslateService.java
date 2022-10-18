@@ -42,7 +42,7 @@ public class TranslateService {
 
     private static String baidu(String message, String from, String to, TranslateConfig translateConfig) {
         //构造请求参数
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<String, String>();
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("q", message);
         params.add("from", from);
         params.add("to", to);
@@ -54,11 +54,11 @@ public class TranslateService {
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(translateConfig.getUrl());
         URI uri = builder.queryParams(params).build().encode().toUri();
-        log.debug("翻译构造的URI为：" + String.valueOf(uri));
+        log.debug("翻译构造的URI为：" + uri);
         RestTemplate restTemplate = new RestTemplate();
         BaiduTranslateResult result = restTemplate.getForObject(uri, BaiduTranslateResult.class);
         StringBuilder str = new StringBuilder();
-        if (result.getError_code() == 0) {//
+        if (result != null && result.getError_code() == 0) {//
             for (Map<String, String> item : result.getTrans_result()) {
                 str.append(item.get("dst"));
                 str.append("\n");
@@ -72,24 +72,24 @@ public class TranslateService {
 
     private static String deepl(String message, String from, String to, TranslateConfig translateConfig) {
         //构造请求参数
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<String, String>();
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         HttpHeaders headers = new HttpHeaders();
         MediaType mediaType = MediaType.parseMediaType("application/json");
         headers.setContentType(mediaType);
         headers.add("Accept", MediaType.APPLICATION_JSON.toString());
         JSONObject requestMap = new JSONObject();
-        message = message.replace("\n", "/n ");
+        message = message.replace("\n", " /n ");
         requestMap.put("text", message);
         requestMap.put("source_lang", from);
         requestMap.put("target_lang", to);
         HttpEntity<JSONObject> httpEntity = new HttpEntity<>(requestMap, headers);
 
-        log.debug("翻译构造的URI为：" + String.valueOf(translateConfig.getUrl()) + requestMap.toString());
+        log.debug("翻译构造的URI为：" + translateConfig.getUrl() + requestMap.toString());
         RestTemplate restTemplate = new RestTemplate();
         DeeplTranslateResult result = restTemplate.postForObject(translateConfig.getUrl(), httpEntity, DeeplTranslateResult.class);
-        if (result.getCode() == 200) {
+        if (result != null && result.getCode() == 200) {
             String data = result.getData();
-            data = data.replace("/n ", "\n") + "\n";
+            data = data.replace(" /n ", "\n") + "\n";
             return data;
         } else {
             log.error("翻译错误:" + result.getCode() + " " + result.getMsg());
