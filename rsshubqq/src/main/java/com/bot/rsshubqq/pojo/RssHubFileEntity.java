@@ -16,11 +16,11 @@ import java.util.Map;
  **/
 @Data
 @AllArgsConstructor
-public class FileEntity {
+public class RssHubFileEntity {
 
     private Map<String, RssResult> resultMap;
 
-    public FileEntity() {
+    public RssHubFileEntity() {
         resultMap = new HashMap<>();
     }
 }
