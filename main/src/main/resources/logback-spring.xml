@@ -91,6 +91,39 @@ configuration 子节点为 appender、logger、root
         </encoder>
     </appender>
 
+    <!--滚动文件-->
+    <appender name="steamBranchinfo" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/steamBranch/log.log</file>
+        <!-- ThresholdFilter:临界值过滤器，过滤掉 TRACE 和 DEBUG 级别的日志 -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/steamBranch/%d{yyyy-MM-dd}.log.log</fileNamePattern>
+            <maxHistory>30</maxHistory><!--保存最近30天的日志-->
+        </rollingPolicy>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] %-5level %logger{36} : %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--滚动文件-->
+    <appender name="steamBrancherror" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- ThresholdFilter:临界值过滤器，过滤掉 TRACE 和 DEBUG 级别的日志 -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/steamBranch/%d{yyyy-MM-dd}.error.log</fileNamePattern>
+            <maxHistory>30</maxHistory><!--保存最近30天的日志-->
+        </rollingPolicy>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] %-5level %logger{36} : %msg%n</pattern>
+        </encoder>
+    </appender>
+
     <!--这里如果是info，spring、mybatis等框架则不会输出：TRACE < DEBUG < INFO <  WARN < ERROR-->
     <!--root是所有logger的祖先，均继承root，如果某一个自定义的logger没有指定level，就会寻找
     父logger看有没有指定级别，直到找到root。-->
@@ -100,12 +133,22 @@ configuration 子节点为 appender、logger、root
         <appender-ref ref="errorFile"/>
     </root>
 
+    <!--RsshubQQ-->
     <logger name="com.bot.rsshubqq" level="INFO" additivity="false">
-        <appender-ref ref="rsshubqqinfo" />
+        <appender-ref ref="rsshubqqinfo"/>
     </logger>
 
     <logger name="com.bot.rsshubqq" level="ERROR" additivity="false">
-        <appender-ref ref="rsshubqqerror" />
+        <appender-ref ref="rsshubqqerror"/>
+    </logger>
+
+    <!--SteamBranch-->
+    <logger name="com.bot.steamBranch" level="INFO" additivity="false">
+        <appender-ref ref="steamBranchinfo"/>
+    </logger>
+
+    <logger name="com.bot.steamBranch" level="ERROR" additivity="false">
+        <appender-ref ref="steamBrancherror"/>
     </logger>
     <!--为某个包单独配置logger
 

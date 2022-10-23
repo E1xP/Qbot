@@ -27,6 +27,11 @@ target/
 /utils/target/
 /rsshubqq/target/
 /main/target/
+/steamBranch/target/
+/utils/src/test/
+/rsshubqq/src/test/
+/main/src/test/
+/steamBranch/src/test/
 /.idea/
 /db/
 /tmp/

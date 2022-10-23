@@ -8,12 +8,18 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="main" />
-        <module name="utils" />
+        <module name="steamBranch" />
         <module name="rsshubqq" />
+        <module name="utils" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="baidu-translate" target="11" />
+      <module name="main" target="8" />
+      <module name="Qbot" target="8" />
+      <module name="rsshubqq" target="8" />
+      <module name="steamBranch" target="8" />
+      <module name="utils" target="8" />
     </bytecodeTargetLevel>
   </component>
 </project>

@@ -1,0 +1,14 @@
+steam:
+  enable: true
+  query-time: 300 #查询间隔时间(s
+  item-pause-time: 5 #每个SteamItem查询间隔时间(s
+  dbPath: db/steamDbFile.json
+  steamCmdPath: /opt/steamcmd/styeamcmd.sh
+  steamList:
+    - name: ReadyOrNot  #查询名称
+      appId: 1144200    #游戏id
+      branchList: #Branch列表
+        - "public"
+        - "supporteralpha"
+      groupList: #发送群列表
+        - 1059769975
