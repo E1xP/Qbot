@@ -3,6 +3,7 @@ package com.bot.steamBranch.service;
 import com.bot.steamBranch.config.SteamConfig;
 import com.bot.steamBranch.controller.SteamController;
 import com.bot.steamBranch.mapper.SteamMapper;
+import com.bot.steamBranch.pojo.SteamBranchItem;
 import com.bot.steamBranch.pojo.SteamFeedItem;
 import com.bot.steamBranch.pojo.SteamResult;
 import com.bot.steamBranch.pojo.dto.SteamResultBranchDto;
@@ -92,11 +93,25 @@ public class SteamService implements Runnable {
                 //反序列化
                 SteamResultDto steamResultDto = objectMapper.readValue(result, SteamResultDto.class);
                 Map<String, SteamResultBranchDto> branches = steamResultDto.getDepots().getBranches();
+                //判断是否有更新并构造Str
+                StringBuilder updateBuilder = new StringBuilder();//结果Str
+                SteamResult oldResult = steamMapper.getResult(steamFeedItem);
+                int updateBranchCount = 0;
                 for (String branchName : branches.keySet()) {
                     if (steamFeedItem.getBranchList().contains(branchName)) {
                         //若为监听分支
+                        SteamResultBranchDto resultItem = branches.get(branchName);
+                        SteamBranchItem oldBranchResult = oldResult.getOldBranchResult(branchName);
+                        if (resultItem.getTimeupdated() > oldBranchResult.getTimeStamp()) {
+                            //有新分支时间
+                            updateBranchCount++;
 
+                        }
                     }
+                }
+                if (updateBranchCount > 0) {
+                    //有更新分支
+
                 }
             }
             //等待运行完

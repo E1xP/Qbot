@@ -1,10 +1,8 @@
 package com.bot.steamBranch.pojo;
 
-import com.bot.steamBranch.pojo.dto.SteamResultBranchDto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,13 +27,17 @@ public class SteamResult {
         this.name = steamFeedItem.getName();
     }
 
-    public void setResult(List<SteamResultBranchDto> steamResultBranchDtoList) {
-        for (SteamResultBranchDto item : steamResultBranchDtoList) {
-
-        }
+    public SteamResult() {
     }
 
-    public SteamResult() {
+    /**
+     * 获取对应branch以往抓取结果
+     *
+     * @param branchName Branch名称
+     * @return branch以往抓取结果
+     */
+    public SteamBranchItem getOldBranchResult(String branchName) {
+        return steamBranchItemMap.get(branchName);
     }
 
     @JsonIgnore

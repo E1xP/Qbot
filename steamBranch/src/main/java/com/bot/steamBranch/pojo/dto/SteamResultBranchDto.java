@@ -17,5 +17,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class SteamResultBranchDto {
     String buildid;
-    String timeupdated;
+    Long timeupdated;
 }
