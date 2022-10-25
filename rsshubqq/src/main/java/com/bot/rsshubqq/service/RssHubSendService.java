@@ -5,10 +5,10 @@ import com.bot.rsshubqq.config.TranslateConfig;
 import com.bot.rsshubqq.pojo.RssFeedItem;
 import com.bot.rsshubqq.pojo.RssItem;
 import com.bot.rsshubqq.utils.BreakOnlyOne;
+import com.bot.utils.CoolQUtils;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.lz1998.cq.CQGlobal;
 import net.lz1998.cq.retdata.ApiData;
 import net.lz1998.cq.retdata.MessageData;
 import net.lz1998.cq.robot.CoolQ;
@@ -164,7 +164,7 @@ public class RssHubSendService implements Runnable {
         CoolQ coolQ=null;
         int sendTryCount=0;
         do{
-            coolQ=getCoolQ();
+            coolQ = CoolQUtils.getCoolQ();
             if(coolQ==null){
                 sendTryCount++;
                 log.error(sendName+" = 发送获取不到Bot实体，延迟60s后再尝试发送");
@@ -285,20 +285,6 @@ public class RssHubSendService implements Runnable {
      */
     private String translate(String message){
         return TranslateService.translate(message, "auto", translateConfig.getTargetLanguage(), translateConfig);
-    }
-
-    /**
-     * 获取可发送的CoolQ机器人对象
-     * @return CoolQ（当前无机器人则返回null
-     */
-    private CoolQ getCoolQ(){
-        if(!CQGlobal.robots.values().isEmpty()) {
-            //不为空取出第一个值
-            for (CoolQ coolQ:CQGlobal.robots.values()) {
-                return coolQ;
-            }
-        }
-        return null;
     }
 
     /**

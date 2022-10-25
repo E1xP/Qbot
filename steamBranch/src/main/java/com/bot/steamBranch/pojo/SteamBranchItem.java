@@ -20,4 +20,8 @@ public class SteamBranchItem {
      * unix时间戳
      */
     Long timeStamp;
+    /**
+     * 版本Id
+     */
+    String buildId;
 }
