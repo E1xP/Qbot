@@ -12,6 +12,7 @@
         <module>rsshubqq</module>
         <module>main</module>
         <module>utils</module>
+        <module>steamBranch</module>
     </modules>
 
     <properties>
