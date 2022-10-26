@@ -105,79 +105,104 @@ public class SteamService implements Runnable {
                 StringBuilder resultStr = new StringBuilder();//结果Str
                 SteamResult oldResult = steamMapper.getResult(steamFeedItem);
                 int updateBranchCount = 0;
-                for (String branchName : branches.keySet()) {
-                    if (steamFeedItem.getBranchList().contains(branchName)) {
-                        //若为监听分支
-                        SteamResultBranchDto resultItem = branches.get(branchName);
-                        SteamBranchItem oldBranchResult = oldResult.getOldBranchResult(branchName);
-                        if (resultItem.getTimeupdated() > oldBranchResult.getTimeStamp()) {
-                            //有新分支时
-                            if (updateBranchCount != 0) {
-                                //多结果增加分割线
-                                resultStr.append("----------------------\n");
+                boolean newFlag = false;
+                if (oldResult == null) {
+                    //第一次获取
+                    log.info(steamFeedItem.getName() + " ==>首次抓取");
+                    SteamResult steamResult = new SteamResult(steamFeedItem, steamResultDto);
+                    steamMapper.getResultMap().put(steamResult.getName(), steamResult);
+                    steamMapper.save();
+                } else {
+                    for (String branchName : branches.keySet()) {
+                        if (steamFeedItem.getBranchList().contains(branchName)) {
+                            //若为监听分支
+                            SteamResultBranchDto resultItem = branches.get(branchName);
+                            SteamBranchItem oldBranchResult = oldResult.getOldBranchResult(branchName);
+                            if (oldBranchResult == null) {
+                                //第一次获取
+                                log.info(steamFeedItem.getName() + " ==>首次抓取分支-" + branchName);
+                                SteamBranchItem steamBranchItem = new SteamBranchItem();
+                                steamBranchItem.setName(branchName);
+                                steamBranchItem.setBuildId(resultItem.getBuildid());
+                                steamBranchItem.setTimeStamp(resultItem.getTimeupdated());
+                                steamResult.setOldBranchResult(steamBranchItem);
+                                newFlag = true;
+                            } else {
+                                //非第一次获取
+                                if (resultItem.getTimeupdated() > oldBranchResult.getTimeStamp()) {
+                                    //有新分支时
+                                    if (updateBranchCount != 0) {
+                                        //多结果增加分割线
+                                        resultStr.append("----------------------\n");
+                                    }
+                                    resultStr.append(branchName).append(":\n")
+                                            .append("\t版本号：").append(resultItem.getBuildid()).append("\n")
+                                            .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeupdated()))).append("\n")
+                                            .append("\t旧版本号：").append(oldBranchResult.getBuildId()).append("\n")
+                                            .append("\t上次更新时间：").append(simpleDateFormat.format(new Date(oldBranchResult.getTimeStamp()))).append("\n");
+                                    updateBranchCount++;
+                                    //持久化更新结果
+                                    oldBranchResult.setBuildId(resultItem.getBuildid());
+                                    oldBranchResult.setTimeStamp(resultItem.getTimeupdated());
+                                }
                             }
-                            resultStr.append(branchName).append(":\n")
-                                    .append("\t版本号：").append(resultItem.getBuildid()).append("\n")
-                                    .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeupdated()))).append("\n")
-                                    .append("\t旧版本号：").append(oldBranchResult.getBuildId()).append("\n")
-                                    .append("\t上次更新时间：").append(simpleDateFormat.format(new Date(oldBranchResult.getTimeStamp()))).append("\n");
-                            updateBranchCount++;
-                            //持久化更新结果
-                            oldBranchResult.setBuildId(resultItem.getBuildid());
-                            oldBranchResult.setTimeStamp(resultItem.getTimeupdated());
                         }
                     }
-                }
-                if (updateBranchCount > 0) {
-                    //有更新分支
-                    StringBuilder sendStrBuilder = new StringBuilder();
-                    Date currentDate = new Date();
-                    sendStrBuilder
-                            .append("【").append(steamResultDto.getCommonDto().getName()).append("】Steam更新了!\n")
-                            .append("共有").append(updateBranchCount).append("个分支更新\n")
-                            .append("======================\n")
-                            .append(resultStr)
-                            .append("======================\n")
-                            .append("采集时间:").append(simpleDateFormat.format(currentDate));
-                    //持久化结果
-                    steamMapper.save();
-                    //向群发送结果
-                    CoolQ coolQ = null;
-                    int sendTryCount = 0;
-                    String content = new String(stringBuilder);
-                    String sendName = steamFeedItem.getName();
-                    do {
-                        coolQ = CoolQUtils.getCoolQ();
-                        if (coolQ == null) {
-                            sendTryCount++;
-                            log.error(sendName + " = 发送获取不到Bot实体，延迟60s后再尝试发送");
-                            Thread.sleep(1000 * 60);
-                        }
-                    } while (coolQ == null && sendTryCount < 5);//仅重试5次
-                    if (coolQ != null) {
-                        log.debug("开始发送消息：" + steamFeedItem.getName() + "\n群：" + steamFeedItem.getGroupList() + "\n内容：" + content);
-                        int sendCount = 0;
-                        ApiData<MessageData> apiData = null;
-                        for (long groupId : steamFeedItem.getGroupList()) {
-                            apiData = coolQ.sendGroupMsg(groupId, content, false);
-                            //发送后判断单个消息
-                            if (apiData.getStatus().equals("ok") && apiData.getRetcode() == 0) {
-                                sendCount++;
-                                log.debug(sendName + " = 发送群消息：" + groupId + "，成功：" + apiData);
+                    if (newFlag) {
+                        //持久化结果
+                        steamMapper.save();
+                    }
+                    if (updateBranchCount > 0) {
+                        //有更新分支
+                        StringBuilder sendStrBuilder = new StringBuilder();
+                        Date currentDate = new Date();
+                        sendStrBuilder
+                                .append("【").append(steamResultDto.getCommonDto().getName()).append("】Steam更新了!\n")
+                                .append("共有").append(updateBranchCount).append("个分支更新\n")
+                                .append("======================\n")
+                                .append(resultStr)
+                                .append("======================\n")
+                                .append("采集时间:").append(simpleDateFormat.format(currentDate));
+                        //持久化结果
+                        steamMapper.save();
+                        //向群发送结果
+                        CoolQ coolQ = null;
+                        int sendTryCount = 0;
+                        String content = new String(stringBuilder);
+                        String sendName = steamFeedItem.getName();
+                        do {
+                            coolQ = CoolQUtils.getCoolQ();
+                            if (coolQ == null) {
+                                sendTryCount++;
+                                log.error(sendName + " = 发送获取不到Bot实体，延迟60s后再尝试发送");
+                                Thread.sleep(1000 * 60);
+                            }
+                        } while (coolQ == null && sendTryCount < 5);//仅重试5次
+                        if (coolQ != null) {
+                            log.debug("开始发送消息：" + steamFeedItem.getName() + "\n群：" + steamFeedItem.getGroupList() + "\n内容：" + content);
+                            int sendCount = 0;
+                            ApiData<MessageData> apiData = null;
+                            for (long groupId : steamFeedItem.getGroupList()) {
+                                apiData = coolQ.sendGroupMsg(groupId, content, false);
+                                //发送后判断单个消息
+                                if (apiData.getStatus().equals("ok") && apiData.getRetcode() == 0) {
+                                    sendCount++;
+                                    log.debug(sendName + " = 发送群消息：" + groupId + "，成功：" + apiData);
+                                } else {
+                                    log.debug(sendName + " = 发送群消息：" + groupId + "，失败：" + apiData);
+                                }
+                                if (steamFeedItem.getGroupList().size() - 1 != steamFeedItem.getGroupList().indexOf(groupId)) {
+                                    Thread.sleep(100);
+                                }
+                            }
+                            if (sendCount == steamFeedItem.getGroupList().size()) {
+                                log.info(sendName + " ==>完成发送：" + steamFeedItem.getName());
                             } else {
-                                log.debug(sendName + " = 发送群消息：" + groupId + "，失败：" + apiData);
+                                log.error(sendName + " = 发送失败：" + steamFeedItem.getName() + "\n返还消息：" + apiData + "\n消息内容：" + content);
                             }
-                            if (steamFeedItem.getGroupList().size() - 1 != steamFeedItem.getGroupList().indexOf(groupId)) {
-                                Thread.sleep(100);
-                            }
-                        }
-                        if (sendCount == steamFeedItem.getGroupList().size()) {
-                            log.info(sendName + " ==>完成发送：" + steamFeedItem.getName());
                         } else {
-                            log.error(sendName + " = 发送失败：" + steamFeedItem.getName() + "\n返还消息：" + apiData + "\n消息内容：" + content);
+                            log.error(sendName + " = 等待Bot5次失败放弃发送：" + steamFeedItem.getName());
                         }
-                    } else {
-                        log.error(sendName + " = 等待Bot5次失败放弃发送：" + steamFeedItem.getName());
                     }
                 }
             }
