@@ -10,6 +10,7 @@ import com.bot.steamBranch.pojo.dto.SteamResultBranchDto;
 import com.bot.steamBranch.pojo.dto.SteamResultDto;
 import com.bot.steamBranch.utils.SteamSendServiceFactory;
 import com.bot.utils.CoolQUtils;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -86,9 +87,18 @@ public class SteamService implements Runnable {
             while ((readLine = bufferedReader.readLine()) != null) {
                 stringBuilder.append(readLine);
             }
+            if (stringBuilder.length() < 2) {
+                log.error(steamFeedItem.getName() + "获取不到返还");
+                return;
+            }
             log.debug(steamFeedItem.getName() + "原始结果:" + stringBuilder.toString());
             //处理V社格式为标准Json格式
-            String result = stringBuilder.substring(stringBuilder.indexOf("{"), stringBuilder.lastIndexOf("}") + 1)
+            int strStart = stringBuilder.indexOf("{");
+            int strEnd = stringBuilder.lastIndexOf("}");
+            if (strStart < 0 || strEnd > stringBuilder.length()) {
+                log.error(steamFeedItem.getName() + "返还不包含{}：" + strStart + " " + strEnd);
+            }
+            String result = stringBuilder.substring(strStart, strEnd + 1)
                     .replaceAll("[\t\n]", "")
                     .replaceAll("\"([^{}]*?)\"\"([^{}]*?)\"", "\"$1\":\"$2\"")
                     .replaceAll("\"([^{}]*?)\"\"([^{}]*?)\"", "\"$1\",\"$2\"")
@@ -100,6 +110,7 @@ public class SteamService implements Runnable {
             } else {
                 log.debug(steamFeedItem.getName() + "获取结果:" + result);
                 //反序列化
+                objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
                 SteamResultDto steamResultDto = objectMapper.readValue(result, SteamResultDto.class);
                 Map<String, SteamResultBranchDto> branches = steamResultDto.getDepots().getBranches();
                 //判断是否有更新并构造Str
@@ -137,9 +148,9 @@ public class SteamService implements Runnable {
                                     }
                                     resultStr.append(branchName).append(":\n")
                                             .append("\t版本号：").append(resultItem.getBuildid()).append("\n")
-                                            .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeupdated()))).append("\n")
+                                            .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeupdated() * 1000))).append("\n")
                                             .append("\t旧版本号：").append(oldBranchResult.getBuildId()).append("\n")
-                                            .append("\t上次更新时间：").append(simpleDateFormat.format(new Date(oldBranchResult.getTimeStamp()))).append("\n");
+                                            .append("\t上次更新时间：").append(simpleDateFormat.format(new Date(oldBranchResult.getTimeStamp() * 1000))).append("\n");
                                     updateBranchCount++;
                                     //持久化更新结果
                                     oldBranchResult.setBuildId(resultItem.getBuildid());
