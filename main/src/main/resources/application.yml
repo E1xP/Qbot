@@ -18,11 +18,11 @@ ping-config:
   messageGap: 1000  #消息间隔（ms
 server:
   port: 8081
-logging:
-  config: classpath:logback-spring.xml
-  level:
-    root: info
-    com.bot.main: info
+#logging:
+#  config: classpath:stop-logback-spring.xml
+#  level:
+#    root: info
+#    com.bot.main: info
 rest-template-config:
   connectionTimeout: 5 #设置网络连接超时（s
   readTimeout: 60      #设置读取超时（s

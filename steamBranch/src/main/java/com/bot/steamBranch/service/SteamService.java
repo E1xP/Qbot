@@ -86,6 +86,7 @@ public class SteamService implements Runnable {
             while ((readLine = bufferedReader.readLine()) != null) {
                 stringBuilder.append(readLine);
             }
+            log.debug(steamFeedItem.getName() + "原始结果:" + stringBuilder);
             //处理V社格式为标准Json格式
             String result = stringBuilder.substring(stringBuilder.indexOf("{"), stringBuilder.lastIndexOf("}") + 1)
                     .replaceAll("[\t\n]", "")
