@@ -111,7 +111,6 @@ public class SteamService implements Runnable {
                     log.info(steamFeedItem.getName() + " ==>首次抓取");
                     SteamResult steamResult = new SteamResult(steamFeedItem, steamResultDto);
                     steamMapper.getResultMap().put(steamResult.getName(), steamResult);
-                    steamMapper.save();
                 } else {
                     for (String branchName : branches.keySet()) {
                         if (steamFeedItem.getBranchList().contains(branchName)) {
@@ -147,10 +146,6 @@ public class SteamService implements Runnable {
                                 }
                             }
                         }
-                    }
-                    if (newFlag) {
-                        //持久化结果
-                        steamMapper.save();
                     }
                     if (updateBranchCount > 0) {
                         //有更新分支

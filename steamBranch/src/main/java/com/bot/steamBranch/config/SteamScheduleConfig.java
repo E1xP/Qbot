@@ -1,6 +1,7 @@
 package com.bot.steamBranch.config;
 
 import com.bot.steamBranch.controller.SteamController;
+import com.bot.steamBranch.service.SteamService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.TaskScheduler;
@@ -49,9 +50,9 @@ public class SteamScheduleConfig implements SchedulingConfigurer {
                         log.error("陷入等待检测死锁");
                     } else {
                         StringBuilder stringBuilder = new StringBuilder();
-                        for (RssHubService item : steamController.getThreads()) {
+                        for (SteamService item : steamController.getThreads()) {
                             if (!item.isFinished()) {
-                                stringBuilder.append(item.getRssFeedItem().getName()).append(" ");
+                                stringBuilder.append(item.getSteamFeedItem().getName()).append(" ");
                             }
                         }
                         steamController.suspendAll();
