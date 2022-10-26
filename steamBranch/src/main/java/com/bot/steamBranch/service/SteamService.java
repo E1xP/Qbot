@@ -101,11 +101,14 @@ public class SteamService implements Runnable {
             String result = stringBuilder.substring(strStart, strEnd + 1)
                     .replaceAll("[\t\n]", "")
                     .replaceAll(" ", "")
-                    .replaceAll(":", "：")
-                    .replaceAll("\"([^\"]*?)\"\"([^\"]*?)\"", "\"$1\":\"$2\"")
+                    .replaceAll(":", "：");
+            if (steamFeedItem.getAppId() == 581320) {
+                result = result.replaceAll("\"hungarian\"1\"", "\"hungarian\"\"1\"").replaceAll("\"eulas\"\"0\"", "\"eulas\"");//沙暴特供
+            }
+            result = result.replaceAll("\"([^\"]*?)\"\"([^\"]*?)\"", "\"$1\":\"$2\"")
                     .replaceAll("\"([^:\"]*?|[^{}\"]{2,}?)\"\"([^,\"]*?|[^\"]{2,}?)\"", "\"$1\",\"$2\"")
-                    .replaceAll("\"([^{}]*?)\"\\{\"", "\"$1\":{\"")
                     .replaceAll("}\"([^{}]*?)\"", "},\"$1\"");
+            result = result.replaceAll("\"([^{}]*?)\"\\{\"", "\"$1\":{\"");
             //若获取不到
             if (StringUtils.isEmpty(result)) {
                 log.error(steamFeedItem.getName() + "获取不到对应App数据，请检查SteamCmd查询与AppId情况");
