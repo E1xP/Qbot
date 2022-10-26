@@ -101,7 +101,7 @@ public class SteamService implements Runnable {
             String result = stringBuilder.substring(strStart, strEnd + 1)
                     .replaceAll("[\t\n]", "")
                     .replaceAll("\"([^{}]*?)\"\"([^{}]*?)\"", "\"$1\":\"$2\"")
-                    .replaceAll("\"([^{}\":]*?)\"\"([^{}\"]*?)\"", "\"$1\",\"$2\"")
+                    .replaceAll("\"([^{}:\"]*?|[^{}\"]{2}?)\"\"([^{}\"]*?)\"", "\"$1\",\"$2\"")
                     .replaceAll("\"([^{}]*?)\"\\{", "\"$1\":{")
                     .replaceAll("}\"([^{}]*?)\"", "},\"$1\"");
             //若获取不到

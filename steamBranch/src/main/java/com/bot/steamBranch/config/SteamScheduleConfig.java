@@ -65,7 +65,7 @@ public class SteamScheduleConfig implements SchedulingConfigurer {
                     if (steamThread == null || !steamThread.isAlive()) {
                         //无线程，新建并启动
                         steamThread = new Thread(steamController);
-                        steamThread.setName("RssHubPull");
+                        steamThread.setName("steam");
                         steamThread.start();
                     } else {
                         //有线程则唤醒
