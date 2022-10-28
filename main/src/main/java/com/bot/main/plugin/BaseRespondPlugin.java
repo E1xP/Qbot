@@ -81,7 +81,7 @@ public class BaseRespondPlugin extends CQPlugin {
                 case "./send"://发送群消息
                     onSendPrivateMessage(cq, event);
                     break;
-                case "./joinGroup"://加入某群
+                case "./joingroup"://加入某群
                     onJoinGroupPrivateMessage(cq, event);
                 default:
                     onErrorCommandPrivateMessage(cq, event);
@@ -184,7 +184,7 @@ public class BaseRespondPlugin extends CQPlugin {
         if (botConfig.getAdmins().contains(sender.getUserId())) {//判定是否为管理员
             Long groupId = null;
             try {
-                groupId = Long.valueOf(event.getMessage().split(" ")[0]);
+                groupId = Long.valueOf(event.getMessage().split(" ")[1]);
             } catch (NumberFormatException e) {
                 cq.sendPrivateMsg(event.getUserId(), "参数错误-非群号", true);
             }
