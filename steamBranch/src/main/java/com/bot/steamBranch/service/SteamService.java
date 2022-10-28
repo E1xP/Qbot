@@ -7,9 +7,9 @@ import com.bot.steamBranch.pojo.SteamBranchItem;
 import com.bot.steamBranch.pojo.SteamFeedItem;
 import com.bot.steamBranch.pojo.SteamResult;
 import com.bot.steamBranch.pojo.dto.SteamResultBranchDto;
-import com.bot.steamBranch.pojo.dto.SteamResultDto;
 import com.bot.steamBranch.utils.SteamSendServiceFactory;
 import com.bot.utils.CoolQUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
@@ -19,13 +19,14 @@ import net.lz1998.cq.retdata.MessageData;
 import net.lz1998.cq.robot.CoolQ;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author E1xP@foxmail.com
@@ -85,7 +86,7 @@ public class SteamService implements Runnable {
             String readLine = "";
             StringBuilder stringBuilder = new StringBuilder();
             while ((readLine = bufferedReader.readLine()) != null) {
-                stringBuilder.append(readLine);
+                stringBuilder.append(readLine).append("\n");
             }
             if (stringBuilder.length() < 2) {
                 log.error(steamFeedItem.getName() + "获取不到返还");
@@ -97,27 +98,34 @@ public class SteamService implements Runnable {
             int strEnd = stringBuilder.lastIndexOf("}");
             if (strStart < 0 || strEnd > stringBuilder.length()) {
                 log.error(steamFeedItem.getName() + "返还不包含{}：" + strStart + " " + strEnd);
+                return;
             }
-            String result = stringBuilder.substring(strStart, strEnd + 1)
-                    .replaceAll("[\t\n]", "")
-                    .replaceAll(" ", "")
-                    .replaceAll(":", "：");
-            if (steamFeedItem.getAppId() == 581320) {
-                result = result.replaceAll("\"hungarian\"1\"", "\"hungarian\"\"1\"").replaceAll("\"eulas\"\"0\"", "\"eulas\"");//沙暴特供
-            }
-            result = result.replaceAll("\"([^\"]*?)\"\"([^\"]*?)\"", "\"$1\":\"$2\"")
-                    .replaceAll("\"([^:\"]*?|[^{}\"]{2,}?)\"\"([^,\"]*?|[^\"]{2,}?)\"", "\"$1\",\"$2\"")
-                    .replaceAll("}\"([^{}]*?)\"", "},\"$1\"");
-            result = result.replaceAll("\"([^{}]*?)\"\\{\"", "\"$1\":{\"");
+            String result = stringBuilder.substring(strStart, strEnd + 1).replaceAll("\t", "");
+            //分离branchesjson
+            Pattern branchPattern = Pattern.compile("\\\"branches\\\"[\\s\\{]*?(\\\"[\\s\\S]*?\\\")[\\s\\}]*?\\\"ufs\\\"");
+            Matcher branchMatcher = branchPattern.matcher(result);
+            branchMatcher.find();
+            String branchesStr = "{" + branchMatcher.group(1) + "}}";
+            branchesStr = branchesStr.replaceAll("\"([^\"]*?)\"\"([^\"]*?)\"", "\"$1\":\"$2\"")
+                    .replaceAll("\"([^:\"]*?)\"\n\"([^,\"]*?)\"", "\"$1\",\"$2\"")
+                    .replaceAll("}\n\"([^{}]*?)\"", "},\"$1\"")
+                    .replaceAll("\"([^{}]*?)\"\n\\{\n\"", "\"$1\":{\"")
+                    .replaceAll("\n", "");
+            log.debug(steamFeedItem.getName() + "-branhces:" + branchesStr);
+            //获取游戏名
+            Pattern namePattern = Pattern.compile("\\{\n\\\"name\\\"\\\"(.*?)\\\"");
+            Matcher nameMatcher = namePattern.matcher(result);
+            nameMatcher.find();
+            String ganmeName = nameMatcher.group(1);
             //若获取不到
-            if (StringUtils.isEmpty(result)) {
+            if (branchesStr.length() <= 3) {
                 log.error(steamFeedItem.getName() + "获取不到对应App数据，请检查SteamCmd查询与AppId情况");
             } else {
                 log.debug(steamFeedItem.getName() + "获取结果:" + result);
                 //反序列化
                 objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-                SteamResultDto steamResultDto = objectMapper.readValue(result, SteamResultDto.class);
-                Map<String, SteamResultBranchDto> branches = steamResultDto.getDepots().getBranches();
+                Map<String, SteamResultBranchDto> branches = objectMapper.convertValue(branchesStr, new TypeReference<Map<String, SteamResultBranchDto>>() {
+                });
                 //判断是否有更新并构造Str
                 StringBuilder resultStr = new StringBuilder();//结果Str
                 SteamResult oldResult = steamMapper.getResult(steamFeedItem);
@@ -126,7 +134,7 @@ public class SteamService implements Runnable {
                 if (oldResult == null) {
                     //第一次获取
                     log.info(steamFeedItem.getName() + " ==>首次抓取");
-                    SteamResult steamResult = new SteamResult(steamFeedItem, steamResultDto);
+                    SteamResult steamResult = new SteamResult(steamFeedItem, ganmeName, branches);
                     steamMapper.getResultMap().put(steamResult.getName(), steamResult);
                 } else {
                     for (String branchName : branches.keySet()) {
@@ -169,7 +177,7 @@ public class SteamService implements Runnable {
                         StringBuilder sendStrBuilder = new StringBuilder();
                         Date currentDate = new Date();
                         sendStrBuilder
-                                .append("【").append(steamResultDto.getCommonDto().getName()).append("】Steam更新了!\n")
+                                .append("【").append(ganmeName).append("】Steam更新了!\n")
                                 .append("共有").append(updateBranchCount).append("个分支更新\n")
                                 .append("======================\n")
                                 .append(resultStr)

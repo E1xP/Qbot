@@ -1,6 +1,6 @@
 package com.bot.steamBranch.pojo;
 
-import com.bot.steamBranch.pojo.dto.SteamResultDto;
+import com.bot.steamBranch.pojo.dto.SteamResultBranchDto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
@@ -29,10 +29,18 @@ public class SteamResult {
         this.name = steamFeedItem.getName();
     }
 
-    public SteamResult(SteamFeedItem steamFeedItem, SteamResultDto resultDto) {
+    public SteamResult(SteamFeedItem steamFeedItem, String title, Map<String, SteamResultBranchDto> branches) {
         this.name = steamFeedItem.getName();
-        this.title = resultDto.getCommonDto().getName();
-        this.steamBranchItemMap = new HashMap<>();
+        this.title = title;
+        HashMap<String, SteamBranchItem> steamBranchItemMap = new HashMap<>();
+        for (String branchName : branches.keySet()) {
+            SteamBranchItem steamBranchItem = new SteamBranchItem();
+            steamBranchItem.setName(branchName);
+            steamBranchItem.setTimeStamp(branches.get(branchName).getTimeupdated());
+            steamBranchItem.setBuildId(branches.get(branchName).getBuildid());
+            steamBranchItemMap.put(branchName, steamBranchItem);
+        }
+        this.steamBranchItemMap = steamBranchItemMap;
     }
 
     public SteamResult() {

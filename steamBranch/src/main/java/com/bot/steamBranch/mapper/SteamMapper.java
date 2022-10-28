@@ -56,12 +56,7 @@ public class SteamMapper {
      * @return 上次Steam抓取结果，若不存在则创建
      */
     public SteamResult getResult(SteamFeedItem steamFeedItem) {
-        SteamResult steamResult = steamFileEntity.getResultMap().get(steamFeedItem.getName());
-        if (steamResult == null) {
-            steamResult = new SteamResult(steamFeedItem);
-            steamFileEntity.getResultMap().put(steamResult.getName(), steamResult);
-        }
-        return steamResult;
+        return steamFileEntity.getResultMap().get(steamFeedItem.getName());
     }
 
     /**
