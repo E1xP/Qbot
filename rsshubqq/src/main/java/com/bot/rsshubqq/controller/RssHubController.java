@@ -71,7 +71,9 @@ public class RssHubController implements Runnable{
             log.debug("开始等待完成抓取");
             while (isPullUnFinish()){
                 //当未抓取完时等待
-                this.wait();
+                synchronized (this) {
+                    this.wait();
+                }
             }
             //完成抓取保存结果
             log.info("完成抓取");
