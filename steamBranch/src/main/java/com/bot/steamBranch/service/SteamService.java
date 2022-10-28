@@ -209,7 +209,7 @@ public class SteamService implements Runnable {
                                     sendCount++;
                                     log.debug(sendName + " = 发送群消息：" + groupId + "，成功：" + apiData);
                                 } else {
-                                    log.debug(sendName + " = 发送群消息：" + groupId + "，失败：" + apiData);
+                                    log.error(sendName + " = 发送群消息：" + groupId + "，失败：" + apiData);
                                 }
                                 if (steamFeedItem.getGroupList().size() - 1 != steamFeedItem.getGroupList().indexOf(groupId)) {
                                     Thread.sleep(100);
