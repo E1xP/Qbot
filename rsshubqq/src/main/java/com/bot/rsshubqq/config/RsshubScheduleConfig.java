@@ -3,11 +3,8 @@ package com.bot.rsshubqq.config;
 import com.bot.rsshubqq.controller.RssHubController;
 import com.bot.rsshubqq.service.RssHubService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
@@ -79,18 +76,5 @@ public class RsshubScheduleConfig implements SchedulingConfigurer {
             PeriodicTrigger periodicTrigger=new PeriodicTrigger(1000L *rsshubFeedConfig.getQueryTime());
             return periodicTrigger.nextExecutionTime(triggerContext);
         });
-    }
-
-    /**
-     * 注入任务管理器
-     * @return TaskScheduler
-     */
-    @Bean
-    public TaskScheduler taskScheduler(){
-        ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
-        taskScheduler.setThreadNamePrefix("taskScheduler-");
-        taskScheduler.setPoolSize(2);
-        taskScheduler.setRemoveOnCancelPolicy(true);
-        return taskScheduler;
     }
 }

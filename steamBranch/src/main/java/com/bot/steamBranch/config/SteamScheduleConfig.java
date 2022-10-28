@@ -3,11 +3,8 @@ package com.bot.steamBranch.config;
 import com.bot.steamBranch.controller.SteamController;
 import com.bot.steamBranch.service.SteamService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
@@ -80,19 +77,5 @@ public class SteamScheduleConfig implements SchedulingConfigurer {
             PeriodicTrigger periodicTrigger = new PeriodicTrigger(1000L * steamConfig.getQueryTime());
             return periodicTrigger.nextExecutionTime(triggerContext);
         });
-    }
-
-    /**
-     * 注入任务管理器
-     *
-     * @return TaskScheduler
-     */
-    @Bean("Steam")
-    public TaskScheduler taskScheduler() {
-        ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
-        taskScheduler.setThreadNamePrefix("taskScheduler-");
-        taskScheduler.setPoolSize(2);
-        taskScheduler.setRemoveOnCancelPolicy(true);
-        return taskScheduler;
     }
 }
