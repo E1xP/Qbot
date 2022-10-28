@@ -124,7 +124,7 @@ public class SteamService implements Runnable {
                 log.debug(steamFeedItem.getName() + "获取结果:" + result);
                 //反序列化
                 objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-                Map<String, SteamResultBranchDto> branches = objectMapper.convertValue(branchesStr, new TypeReference<Map<String, SteamResultBranchDto>>() {
+                Map<String, SteamResultBranchDto> branches = objectMapper.readValue(branchesStr, new TypeReference<Map<String, SteamResultBranchDto>>() {
                 });
                 //判断是否有更新并构造Str
                 StringBuilder resultStr = new StringBuilder();//结果Str
