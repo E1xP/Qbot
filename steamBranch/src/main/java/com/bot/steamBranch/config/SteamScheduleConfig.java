@@ -90,8 +90,8 @@ public class SteamScheduleConfig implements SchedulingConfigurer {
     @Bean("Steam")
     public TaskScheduler taskScheduler() {
         ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
-        taskScheduler.setThreadNamePrefix("Steam-");
-        taskScheduler.setPoolSize(1);
+        taskScheduler.setThreadNamePrefix("taskScheduler-");
+        taskScheduler.setPoolSize(2);
         taskScheduler.setRemoveOnCancelPolicy(true);
         return taskScheduler;
     }
