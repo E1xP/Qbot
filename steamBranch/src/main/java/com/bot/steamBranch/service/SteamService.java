@@ -188,7 +188,7 @@ public class SteamService implements Runnable {
                         //向群发送结果
                         CoolQ coolQ = null;
                         int sendTryCount = 0;
-                        String content = new String(stringBuilder);
+                        String content = new String(resultStr);
                         String sendName = steamFeedItem.getName();
                         do {
                             coolQ = CoolQUtils.getCoolQ();
