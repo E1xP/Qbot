@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.lz1998.cq.entity.CQUser;
 import net.lz1998.cq.event.message.CQGroupMessageEvent;
 import net.lz1998.cq.event.message.CQPrivateMessageEvent;
+import net.lz1998.cq.event.request.CQGroupRequestEvent;
 import net.lz1998.cq.retdata.GroupData;
 import net.lz1998.cq.robot.CQPlugin;
 import net.lz1998.cq.robot.CoolQ;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
@@ -40,7 +42,22 @@ public class BaseRespondPlugin extends CQPlugin {
     @Resource
     PingConfig pingConfig;//Ping相应配置类
 
-    ArrayList<Long> lastFiveTime=new ArrayList<>();//最后发送时间列表
+    ArrayList<Long> lastFiveTime = new ArrayList<>();//最后发送时间列表
+
+    List<Long> allowJoinGroupList;
+
+    @Override
+    public int onGroupRequest(CoolQ cq, CQGroupRequestEvent event) {
+        boolean approve = false;
+        if (allowJoinGroupList.contains(event.getGroupId())) {
+            approve = true;
+            cq.sendPrivateMsg(botConfig.getAdmins().get(0), "已允许" + event.getGroupId() + "加群邀请", true);
+        } else {
+            cq.sendPrivateMsg(botConfig.getAdmins().get(0), "已拒绝" + event.getGroupId() + "加群邀请", true);
+        }
+        cq.setGroupAddRequest(event.getFlag(), event.getSubType(), approve, "");
+        return MESSAGE_BLOCK;
+    }
 
     /**
      * 接收到私聊消息
@@ -64,8 +81,10 @@ public class BaseRespondPlugin extends CQPlugin {
                 case "./send"://发送群消息
                     onSendPrivateMessage(cq, event);
                     break;
+                case "./joinGroup"://加入某群
+                    onJoinGroupPrivateMessage(cq, event);
                 default:
-                    onErrorCommandPrivateMessage(cq,event);
+                    onErrorCommandPrivateMessage(cq, event);
             }
             return MESSAGE_BLOCK;
         }
@@ -153,6 +172,25 @@ public class BaseRespondPlugin extends CQPlugin {
     }
 
     /*收到私聊消息*/
+
+    /**
+     * 收到到私聊-加入群
+     *
+     * @param cq    cqBot实体类
+     * @param event 群消息事件
+     */
+    private void onJoinGroupPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
+        CQUser sender = event.getSender();
+        if (botConfig.getAdmins().contains(sender.getUserId())) {//判定是否为管理员
+            Long groupId = null;
+            try {
+                groupId = Long.valueOf(event.getMessage().split(" ")[0]);
+            } catch (NumberFormatException e) {
+                cq.sendPrivateMsg(event.getUserId(), "参数错误-非群号", true);
+            }
+            allowJoinGroupList.add(groupId);
+        }
+    }
 
     /**
      * 接收到私聊-不匹配的指令
