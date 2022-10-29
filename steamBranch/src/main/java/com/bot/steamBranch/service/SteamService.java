@@ -116,7 +116,7 @@ public class SteamService implements Runnable {
             Pattern namePattern = Pattern.compile("\\{\n\\\"name\\\"\\\"(.*?)\\\"");
             Matcher nameMatcher = namePattern.matcher(result);
             nameMatcher.find();
-            String ganmeName = nameMatcher.group(1);
+            String gameName = nameMatcher.group(1);
             //若获取不到
             if (branchesStr.length() <= 3) {
                 log.error(steamFeedItem.getName() + "获取不到对应App数据，请检查SteamCmd查询与AppId情况");
@@ -134,7 +134,7 @@ public class SteamService implements Runnable {
                 if (oldResult == null) {
                     //第一次获取
                     log.info(steamFeedItem.getName() + " ==>首次抓取");
-                    SteamResult steamResult = new SteamResult(steamFeedItem, ganmeName, branches);
+                    SteamResult steamResult = new SteamResult(steamFeedItem, gameName, branches);
                     steamMapper.getResultMap().put(steamResult.getName(), steamResult);
                 } else {
                     for (String branchName : branches.keySet()) {
@@ -145,12 +145,6 @@ public class SteamService implements Runnable {
                             if (oldBranchResult == null) {
                                 //第一次获取
                                 log.info(steamFeedItem.getName() + " ==>首次抓取分支-" + branchName);
-                                SteamBranchItem steamBranchItem = new SteamBranchItem();
-                                steamBranchItem.setName(branchName);
-                                steamBranchItem.setBuildId(resultItem.getBuildid());
-                                steamBranchItem.setTimeStamp(resultItem.getTimeupdated());
-                                steamResult.setOldBranchResult(steamBranchItem);
-                                newFlag = true;
                             } else {
                                 //非第一次获取
                                 if (resultItem.getTimeupdated() > oldBranchResult.getTimeStamp()) {
@@ -166,18 +160,16 @@ public class SteamService implements Runnable {
                                             .append("\t上次更新时间：").append(simpleDateFormat.format(new Date(oldBranchResult.getTimeStamp() * 1000))).append("\n");
                                     updateBranchCount++;
                                 }
-                                //持久化更新结果
-                                oldBranchResult.setBuildId(resultItem.getBuildid());
-                                oldBranchResult.setTimeStamp(resultItem.getTimeupdated());
                             }
                         }
                     }
+                    oldResult.setNewResult(gameName, branches);
                     if (updateBranchCount > 0) {
                         //有更新分支
                         StringBuilder sendStrBuilder = new StringBuilder();
                         Date currentDate = new Date();
                         sendStrBuilder
-                                .append("【").append(ganmeName).append("】Steam更新了!\n")
+                                .append("【").append(gameName).append("】Steam更新了!\n")
                                 .append("共有").append(updateBranchCount).append("个分支更新\n")
                                 .append("======================\n")
                                 .append(resultStr)

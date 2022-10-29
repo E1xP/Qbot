@@ -69,4 +69,23 @@ public class SteamResult {
     public boolean isEmpty() {
         return getSteamBranchItemMap().isEmpty();
     }
+
+    /**
+     * 持久化抓取记录
+     *
+     * @param gameName 游戏名称
+     * @param branches SteamResultBranchDto
+     */
+    public void setNewResult(String gameName, Map<String, SteamResultBranchDto> branches) {
+        this.title = gameName;
+        HashMap<String, SteamBranchItem> steamBranchItemMap = new HashMap<>();
+        for (String branchName : branches.keySet()) {
+            SteamBranchItem steamBranchItem = new SteamBranchItem();
+            steamBranchItem.setName(branchName);
+            steamBranchItem.setTimeStamp(branches.get(branchName).getTimeupdated());
+            steamBranchItem.setBuildId(branches.get(branchName).getBuildid());
+            steamBranchItemMap.put(branchName, steamBranchItem);
+        }
+        this.steamBranchItemMap = steamBranchItemMap;
+    }
 }
