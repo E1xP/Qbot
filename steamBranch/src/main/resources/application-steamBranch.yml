@@ -1,10 +1,14 @@
+logging:
+  level:
+    com.bot.steamBranch: info
 steam:
+  steamUserName: anonymous #steam用户名(需要先手动登陆自己的steam账号
   enable: true
   query-time: 300 #查询间隔时间(s
   item-pause-time: 5 #每个SteamItem查询间隔时间(s
   dbPath: db/steamDbFile.json
   steamCmdPath: /opt/steamcmd/styeamcmd.sh
-  steamList:
+  steamList: #仅能查询自身steam库存的游戏
     - name: ReadyOrNot  #查询名称
       appId: 1144200    #游戏id
       branchList: #Branch列表
