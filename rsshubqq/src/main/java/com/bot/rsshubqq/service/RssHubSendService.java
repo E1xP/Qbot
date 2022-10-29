@@ -225,6 +225,7 @@ public class RssHubSendService implements Runnable {
      */
     private AtomicReference<File> downMedia(String mediaUrl) {
         RestTemplate restTemplate = new RestTemplate();
+        log.info(sendName + "开始下载图片:" + mediaUrl);
         if (rssFeedItem.isProxy()) {
             //设置图片下载代理
             SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
