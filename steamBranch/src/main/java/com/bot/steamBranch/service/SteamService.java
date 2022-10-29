@@ -79,7 +79,7 @@ public class SteamService implements Runnable {
         Runtime run = Runtime.getRuntime();
         try {
             //执行SteamCmd Shell脚本
-            Process process = run.exec("bash " + steamConfig.getSteamCmdPath() + " +login anonymous +app_info_print " + steamFeedItem.getAppId() + " +quit");
+            Process process = run.exec("bash " + steamConfig.getSteamCmdPath() + " +login " + steamConfig.getSteamUserName() + " +app_info_print " + steamFeedItem.getAppId() + " +quit");
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(process.getOutputStream())), true);
             out.println("exit");

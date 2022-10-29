@@ -43,4 +43,9 @@ public class SteamConfig {
      * SteamFeed列表
      */
     List<SteamFeedItem> steamList;
+
+    /**
+     * steam用户名
+     */
+    String steamUserName;
 }
