@@ -54,7 +54,7 @@ public class RssHubController implements Runnable{
     public synchronized void run() {
         while (!Thread.currentThread().isInterrupted()) {
             clearTempFile();//清空临时文件夹
-            log.info("开始抓取RssFeed：" + rsshubFeedConfig.getRssList().stream().map(RssFeedItem::getName).collect(Collectors.toList()));
+            log.info("开始抓取SteamFeed：" + rsshubFeedConfig.getRssList().stream().map(RssFeedItem::getName).collect(Collectors.toList()));
             threads.clear();//清空线程所在
             threadArrayList.clear();
             for (RssFeedItem item : rsshubFeedConfig.getRssList()) {
