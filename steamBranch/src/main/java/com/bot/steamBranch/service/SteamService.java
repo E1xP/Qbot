@@ -165,10 +165,10 @@ public class SteamService implements Runnable {
                                             .append("\t旧版本号：").append(oldBranchResult.getBuildId()).append("\n")
                                             .append("\t上次更新时间：").append(simpleDateFormat.format(new Date(oldBranchResult.getTimeStamp() * 1000))).append("\n");
                                     updateBranchCount++;
-                                    //持久化更新结果
-                                    oldBranchResult.setBuildId(resultItem.getBuildid());
-                                    oldBranchResult.setTimeStamp(resultItem.getTimeupdated());
                                 }
+                                //持久化更新结果
+                                oldBranchResult.setBuildId(resultItem.getBuildid());
+                                oldBranchResult.setTimeStamp(resultItem.getTimeupdated());
                             }
                         }
                     }
@@ -183,8 +183,6 @@ public class SteamService implements Runnable {
                                 .append(resultStr)
                                 .append("======================\n")
                                 .append("采集时间:").append(simpleDateFormat.format(currentDate));
-                        //持久化结果
-                        steamMapper.save();
                         //向群发送结果
                         CoolQ coolQ = null;
                         int sendTryCount = 0;
