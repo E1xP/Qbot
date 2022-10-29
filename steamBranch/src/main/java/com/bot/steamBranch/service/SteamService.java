@@ -90,7 +90,11 @@ public class SteamService implements Runnable {
             }
             if (stringBuilder.length() < 2) {
                 log.error(steamFeedItem.getName() + "获取不到返还");
-                return;
+                process.waitFor();
+                bufferedReader.close();
+                out.close();
+                process.destroy();
+                finish();
             }
             log.debug(steamFeedItem.getName() + "原始结果:" + stringBuilder.toString());
             //处理V社格式为标准Json格式
@@ -98,7 +102,11 @@ public class SteamService implements Runnable {
             int strEnd = stringBuilder.lastIndexOf("}");
             if (strStart < 0 || strEnd > stringBuilder.length()) {
                 log.error(steamFeedItem.getName() + "返还不包含{}：" + strStart + " " + strEnd);
-                return;
+                process.waitFor();
+                bufferedReader.close();
+                out.close();
+                process.destroy();
+                finish();
             }
             String result = stringBuilder.substring(strStart, strEnd + 1).replaceAll("\t", "").replaceAll(":", "：");
             //分离branchesjson
@@ -227,6 +235,10 @@ public class SteamService implements Runnable {
             log.error("中断异常-" + steamFeedItem.getName() + ":" + e.getMessage());
         }
         log.debug(steamFeedItem.getName() + " = 完成抓取");
+        finish();
+    }
+
+    void finish() {
         synchronized (this) {
             this.setFinished(true);
         }
