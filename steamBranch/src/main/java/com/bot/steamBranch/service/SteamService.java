@@ -61,7 +61,7 @@ public class SteamService implements Runnable {
     @Resource
     ObjectMapper objectMapper;
 
-    private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+    private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM月dd日 HH:mm:ss");
 
     boolean finished = false;
 
