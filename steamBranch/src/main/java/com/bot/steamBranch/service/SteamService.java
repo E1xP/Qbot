@@ -100,7 +100,7 @@ public class SteamService implements Runnable {
                 log.error(steamFeedItem.getName() + "返还不包含{}：" + strStart + " " + strEnd);
                 return;
             }
-            String result = stringBuilder.substring(strStart, strEnd + 1).replaceAll("\t", "");
+            String result = stringBuilder.substring(strStart, strEnd + 1).replaceAll("\t", "").replaceAll(":", "：");
             //分离branchesjson
             Pattern branchPattern = Pattern.compile("\\\"branches\\\"[\\s\\{]*?(\\\"[\\s\\S]*?\\\")[\\s\\}]*?\\\"ufs\\\"");
             Matcher branchMatcher = branchPattern.matcher(result);
