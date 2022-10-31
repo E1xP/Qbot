@@ -47,12 +47,13 @@ public class SteamController implements Runnable {
     @Override
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
-            log.info("开始抓取RssFeed：" + steamConfig.getSteamList().stream().map(SteamFeedItem::getName).collect(Collectors.toList()));
+            log.info("开始抓取SteamFeed：" + steamConfig.getSteamList().stream().map(SteamFeedItem::getName).collect(Collectors.toList()));
             threads.clear();//清空线程所在
             threadArrayList.clear();
             for (SteamFeedItem item : steamConfig.getSteamList()) {
                 SteamService steamService = steamServiceFactory.getSteamService(item, this);
                 Thread thread = new Thread(steamService);//构建新的独立抓取线程
+                thread.setName("Steam");
                 threads.add(steamService);
                 threadArrayList.add(thread);
                 thread.start();
