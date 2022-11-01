@@ -9,8 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -55,8 +57,14 @@ public class TranslateService {
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(translateConfig.getUrl());
         URI uri = builder.queryParams(params).build().encode().toUri();
         log.debug("翻译构造的URI为：" + uri);
-        RestTemplate restTemplate = new RestTemplate();
-        BaiduTranslateResult result = restTemplate.getForObject(uri, BaiduTranslateResult.class);
+        RestTemplate restTemplate = getRestTemplate();
+        BaiduTranslateResult result = null;
+        try {
+            result = restTemplate.getForObject(uri, BaiduTranslateResult.class);
+        } catch (RestClientException e) {
+            log.error("翻译错误:" + e.getMessage());
+            return null;
+        }
         StringBuilder str = new StringBuilder();
         if (result != null && result.getError_code() == 0) {//
             for (Map<String, String> item : result.getTrans_result()) {
@@ -85,8 +93,14 @@ public class TranslateService {
         HttpEntity<JSONObject> httpEntity = new HttpEntity<>(requestMap, headers);
 
         log.debug("翻译构造的URI为：" + translateConfig.getUrl() + requestMap.toString());
-        RestTemplate restTemplate = new RestTemplate();
-        DeeplTranslateResult result = restTemplate.postForObject(translateConfig.getUrl(), httpEntity, DeeplTranslateResult.class);
+        RestTemplate restTemplate = getRestTemplate();
+        DeeplTranslateResult result = null;
+        try {
+            result = restTemplate.postForObject(translateConfig.getUrl(), httpEntity, DeeplTranslateResult.class);
+        } catch (RestClientException e) {
+            log.error("翻译错误:" + e.getMessage());
+            return null;
+        }
         if (result != null && result.getCode() == 200) {
             String data = result.getData();
             data = data.replace(" /n ", "\n") + "\n";
@@ -95,5 +109,14 @@ public class TranslateService {
             log.error("翻译错误:" + result.getCode() + " " + result.getMsg());
             return null;
         }
+    }
+
+    private static RestTemplate getRestTemplate() {
+        RestTemplate restTemplate = new RestTemplate();
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(2 * 1000);
+        requestFactory.setReadTimeout(10 * 1000);
+        restTemplate.setRequestFactory(requestFactory);
+        return restTemplate;
     }
 }
