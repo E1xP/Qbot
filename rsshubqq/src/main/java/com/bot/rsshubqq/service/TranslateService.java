@@ -86,7 +86,7 @@ public class TranslateService {
         headers.setContentType(mediaType);
         headers.add("Accept", MediaType.APPLICATION_JSON.toString());
         JSONObject requestMap = new JSONObject();
-        message = message.replace("\n", " /n ");
+        message = message.replace("\n", "<br>");
         requestMap.put("text", message);
         requestMap.put("source_lang", from);
         requestMap.put("target_lang", to);
@@ -103,7 +103,7 @@ public class TranslateService {
         }
         if (result != null && result.getCode() == 200) {
             String data = result.getData();
-            data = data.replace(" /n ", "\n") + "\n";
+            data = data.replace("<br>", "\n") + "\n";
             return data;
         } else {
             log.error("翻译错误:" + result.getCode() + " " + result.getMsg());
@@ -115,7 +115,7 @@ public class TranslateService {
         RestTemplate restTemplate = new RestTemplate();
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(2 * 1000);
-        requestFactory.setReadTimeout(10 * 1000);
+        requestFactory.setReadTimeout(20 * 1000);
         restTemplate.setRequestFactory(requestFactory);
         return restTemplate;
     }
