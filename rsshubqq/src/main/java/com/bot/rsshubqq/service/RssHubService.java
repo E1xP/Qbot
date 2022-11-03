@@ -81,7 +81,8 @@ public class RssHubService implements Runnable {
         //抓取Rss内容
         try {
             log.debug(rssFeedItem.getName()+" = 开始抓取");
-            syndFeed = restTemplate.execute(rssFeedItem.getUrl()+"?limit=10", HttpMethod.GET, null, response -> {
+            String requestUrl=rssFeedItem.getUrl()+(rssFeedItem.getUrl().contains("?")?"&":"?")+"limit=10";
+            syndFeed = restTemplate.execute(requestUrl, HttpMethod.GET, null, response -> {
                 SyndFeedInput input = new SyndFeedInput();
                 try {
                     return input.build(new XmlReader(response.getBody()));
