@@ -1,5 +1,6 @@
 package com.bot.steamBranch.pojo.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,4 +19,9 @@ import lombok.NoArgsConstructor;
 public class SteamResultBranchDto {
     String buildid;
     Long timeupdated;
+    /**
+     * 是否是封闭版本
+     */
+    @JsonAlias("pwdrequired")
+    int isClose = 0;
 }
