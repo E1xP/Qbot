@@ -183,7 +183,7 @@ public class SteamService implements Runnable {
                         StringBuilder sendStrBuilder = new StringBuilder();
                         Date currentDate = new Date();
                         sendStrBuilder
-                                .append(haspublicBranch ? "※正式更新※" : "=非公开分支=")
+                                .append(haspublicBranch ? "※正式更新※" : "=非公开分支=").append("\n")
                                 .append("【").append(gameName).append("】Steam更新了!\n")
                                 .append("共有").append(updateBranchCount).append("个分支更新\n")
                                 .append("======================\n")
