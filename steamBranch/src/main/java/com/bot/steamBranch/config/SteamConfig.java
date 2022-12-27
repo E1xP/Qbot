@@ -43,9 +43,16 @@ public class SteamConfig {
      * SteamFeed列表
      */
     List<SteamFeedItem> steamList;
-
     /**
      * steam用户名
      */
     String steamUserName;
+    /**
+     * 连续失败通知
+     */
+    boolean errorInfo;
+    /**
+     * 连续失败通知阈值
+     */
+    int errorInfoCount = 0;
 }

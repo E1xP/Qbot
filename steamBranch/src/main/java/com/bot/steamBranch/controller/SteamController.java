@@ -5,6 +5,7 @@ import com.bot.steamBranch.mapper.SteamMapper;
 import com.bot.steamBranch.pojo.SteamFeedItem;
 import com.bot.steamBranch.service.SteamService;
 import com.bot.steamBranch.utils.SteamServiceFactory;
+import com.bot.utils.service.EarlyWarningService;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,11 @@ public class SteamController implements Runnable {
 
     @Resource
     SteamServiceFactory steamServiceFactory;
+
+    @Resource
+    EarlyWarningService earlyWarningService;
+
+    int errorCount = 0;
 
     /**
      * 存放执行线程的Array
@@ -106,6 +112,29 @@ public class SteamController implements Runnable {
                 }
             }
             return false;
+        }
+    }
+
+    /**
+     * 当遇到错误时
+     */
+    public void onError() {
+        synchronized (this) {
+            this.errorCount++;
+            if (errorCount >= (steamConfig.getErrorInfoCount() <= 0 ? steamConfig.getErrorInfoCount() : steamConfig.getSteamList().size())) {
+                earlyWarningService.sendEarlyWarning("Steam抓取已连续错误" + errorCount + "次！");
+                log.error("Steam触发告警");
+                this.errorCount = 0;
+            }
+        }
+    }
+
+    /**
+     * 当成功时
+     */
+    public void onSuccess() {
+        synchronized (this) {
+            this.errorCount = 0;
         }
     }
 }

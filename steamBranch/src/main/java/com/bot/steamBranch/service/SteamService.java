@@ -128,6 +128,7 @@ public class SteamService implements Runnable {
             //若获取不到
             if (branchesStr.length() <= 3) {
                 log.error(steamFeedItem.getName() + "获取不到对应App数据，请检查SteamCmd查询与AppId情况");
+                this.onError();
             } else {
                 log.debug(steamFeedItem.getName() + "获取结果:" + result);
                 //反序列化
@@ -178,6 +179,7 @@ public class SteamService implements Runnable {
                         }
                     }
                     oldResult.setNewResult(gameName, branches);
+                    this.onSuccess();
                     if (updateBranchCount > 0) {
                         //有更新分支
                         StringBuilder sendStrBuilder = new StringBuilder();
@@ -252,6 +254,24 @@ public class SteamService implements Runnable {
         //唤醒主线程检查是否均完成抓取
         synchronized (steamController) {
             steamController.notify();
+        }
+    }
+
+    /**
+     * 当错误时调用
+     */
+    void onError() {
+        if (steamConfig.isErrorInfo()) {
+            steamController.onError();
+        }
+    }
+
+    /**
+     * 当成功时调用
+     */
+    void onSuccess() {
+        if (steamConfig.isErrorInfo()) {
+            steamController.onSuccess();
         }
     }
 }

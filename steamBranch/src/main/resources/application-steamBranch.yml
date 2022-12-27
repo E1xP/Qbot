@@ -8,9 +8,11 @@ steam:
   item-pause-time: 5 #每个SteamItem查询间隔时间(s
   dbPath: db/steamDbFile.json
   steamCmdPath: /opt/steamcmd/styeamcmd.sh
+  errorInfo: false #是否开启Steam错误提示
+  errorInfoCount: 0 #Steam错误提示阈值; 为0则默认为列表数量
   steamList: #仅能查询自身steam库存的游戏
     - name: ReadyOrNot  #查询名称
-      appId: 1144200    #游戏id
+      appId: 1144200    #游戏SteamId
       branchList: #Branch列表
         - "public"
         - "supporteralpha"
