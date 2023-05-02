@@ -112,7 +112,11 @@ public class SteamBranchPlugin extends CQPlugin {
         }
         Map<Long, String> gameIdToName = steamConfig.getSteamList().stream().collect(Collectors.toMap(SteamFeedItem::getAppId, SteamFeedItem::getName));//游戏id-游戏名对应Map
         String gameId = event.getMessage().split(" ")[1];//游戏id
-        String gameName = gameIdToName.get(gameId);//游戏名称
+        String gameName = null;//游戏名称
+        try {
+            gameName = gameIdToName.get(Long.parseLong(gameId));
+        } catch (NumberFormatException ignored) {
+        }
         if (StringUtils.isEmpty(gameName)) {
             //该游戏不在查询列表中
             String message = "游戏Steam Id不存在对应游戏，请参照./steam-List获取可查询游戏id";
