@@ -141,7 +141,7 @@ public class SteamBranchPlugin extends CQPlugin {
                 .append("======================\n(仅最近一年活动分支)\n");
         //构造历史分支结果
         for (SteamBranchItem resultItem : result.getSteamBranchItemMap().values()) {
-            if (System.currentTimeMillis() - 365 * 24 * 60 * 60 * 1000L < resultItem.getTimeStamp() * 1000L) {
+            if (resultItem.getTimeStamp() != null && System.currentTimeMillis() - 365 * 24 * 60 * 60 * 1000L < resultItem.getTimeStamp() * 1000L) {
                 strBuilder.append("- ").append(resultItem.getName()).append(" :\n")
                         .append("\t版本号：").append(resultItem.getBuildId()).append("\n")
                         .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeStamp() * 1000))).append("\n");
