@@ -54,10 +54,10 @@ public class SteamBranchPlugin extends CQPlugin {
         String comToken = event.getMessage().trim().toLowerCase(Locale.ROOT).split(" ")[0];
         if (event.getMessage().trim().toLowerCase(Locale.ROOT).startsWith("./")) {
             switch (comToken) {
-                case "./steam-List":
+                case "./steam-list":
                     onListGameGroupMessage(cq, event);
                     return MESSAGE_BLOCK;
-                case "./steam-lastUpdate":
+                case "./steam-lastupdate":
                     onLastUpdateGroupMessage(cq, event);
                     return MESSAGE_BLOCK;
                 case "./steam-help":
