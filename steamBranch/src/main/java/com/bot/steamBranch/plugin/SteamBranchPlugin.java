@@ -145,7 +145,8 @@ public class SteamBranchPlugin extends CQPlugin {
                     .append("\t版本号：").append(resultItem.getBuildId()).append("\n")
                     .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeStamp() * 1000))).append("\n");
         }
-
+        String str = new String(strBuilder);
+        cq.sendGroupMsg(event.getGroupId(), CQCodeExtend.reply(event.getMessageId()) + str, false);
     }
 
     /**
