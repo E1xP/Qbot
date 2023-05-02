@@ -83,9 +83,9 @@ public class SteamBranchPlugin extends CQPlugin {
             strBuilder.append("游戏列表：\n");
             for (SteamFeedItem item : steamList) {//构建游戏列表
                 strBuilder
-                        .append("-")
+                        .append("- ")
                         .append(item.getAppId())
-                        .append(":")
+                        .append(" : ")
                         .append(item.getName())
                         .append("\n");
             }
@@ -142,7 +142,7 @@ public class SteamBranchPlugin extends CQPlugin {
         //构造历史分支结果
         for (SteamBranchItem resultItem : result.getSteamBranchItemMap().values()) {
             if (System.currentTimeMillis() - 365 * 24 * 60 * 60 * 1000L < resultItem.getTimeStamp() * 1000L) {
-                strBuilder.append("-").append(resultItem.getName()).append(":\n")
+                strBuilder.append("- ").append(resultItem.getName()).append(" :\n")
                         .append("\t版本号：").append(resultItem.getBuildId()).append("\n")
                         .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeStamp() * 1000))).append("\n");
             }
