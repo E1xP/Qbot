@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SteamBranchPlugin extends CQPlugin {
 
-    private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM月dd日 HH:mm:ss");
+    private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yy年MM月dd日 HH:mm:ss");
     @Resource
     SteamConfig steamConfig;
     @Resource
@@ -141,7 +141,7 @@ public class SteamBranchPlugin extends CQPlugin {
                 .append("======================\n");
         //构造历史分支结果
         for (SteamBranchItem resultItem : result.getSteamBranchItemMap().values()) {
-            if (System.currentTimeMillis() - 365 * 24 * 60 * 60 * 1000L < resultItem.getTimeStamp()) {
+            if (System.currentTimeMillis() - 365 * 24 * 60 * 60 * 1000L < resultItem.getTimeStamp() * 1000L) {
                 strBuilder.append("-").append(resultItem.getName()).append(":\n")
                         .append("\t版本号：").append(resultItem.getBuildId()).append("\n")
                         .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeStamp() * 1000))).append("\n");
