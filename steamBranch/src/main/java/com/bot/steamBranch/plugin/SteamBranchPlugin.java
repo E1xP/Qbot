@@ -137,8 +137,8 @@ public class SteamBranchPlugin extends CQPlugin {
                 .append("】\n")
                 .append("共有")
                 .append(result.getSteamBranchItemMap().size())
-                .append("个分支(仅最近一年)\n")
-                .append("======================\n");
+                .append("个分支\n")
+                .append("======================\n(仅最近一年活动分支)\n");
         //构造历史分支结果
         for (SteamBranchItem resultItem : result.getSteamBranchItemMap().values()) {
             if (System.currentTimeMillis() - 365 * 24 * 60 * 60 * 1000L < resultItem.getTimeStamp() * 1000L) {
