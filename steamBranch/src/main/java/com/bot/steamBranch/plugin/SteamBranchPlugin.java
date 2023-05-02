@@ -137,14 +137,17 @@ public class SteamBranchPlugin extends CQPlugin {
                 .append("】\n")
                 .append("共有")
                 .append(result.getSteamBranchItemMap().size())
-                .append("个分支\n")
+                .append("个分支(仅最近一年)\n")
                 .append("======================\n");
         //构造历史分支结果
         for (SteamBranchItem resultItem : result.getSteamBranchItemMap().values()) {
-            strBuilder.append("-").append(resultItem.getName()).append(":\n")
-                    .append("\t版本号：").append(resultItem.getBuildId()).append("\n")
-                    .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeStamp() * 1000))).append("\n");
+            if (System.currentTimeMillis() - 365 * 24 * 60 * 60 * 1000L < resultItem.getTimeStamp()) {
+                strBuilder.append("-").append(resultItem.getName()).append(":\n")
+                        .append("\t版本号：").append(resultItem.getBuildId()).append("\n")
+                        .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeStamp() * 1000))).append("\n");
+            }
         }
+        strBuilder.append("======================");
         String str = new String(strBuilder);
         cq.sendGroupMsg(event.getGroupId(), CQCodeExtend.reply(event.getMessageId()) + str, false);
     }
