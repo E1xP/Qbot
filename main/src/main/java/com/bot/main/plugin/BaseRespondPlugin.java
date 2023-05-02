@@ -67,7 +67,8 @@ public class BaseRespondPlugin extends CQPlugin {
     String helpMessage =
             "./ping （用于激活机器人响应\n" +
                     "./echo [复读内容] （用于使机器人复读，需admin\n" +
-                    "./help （用于查看帮助内容";
+                    "./help （用于查看帮助内容\n" +
+                    "./steam-help （用于查看Steam模块的帮助内容";
 
     @Override
     public int onGroupRequest(CoolQ cq, CQGroupRequestEvent event) {
