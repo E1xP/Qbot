@@ -7,10 +7,16 @@ spring:
     plugin-list: #插件列表
       - com.bot.main.plugin.FilterPlugin
       - com.bot.rsshubqq.plugin.RssHubPlugin
+      - com.bot.steamBranch.plugin.SteamBranchPlugin
       - com.bot.main.plugin.BaseRespondPlugin
 bot:
   replyGroup: false   #响应群消息
   replyPrivate: true  #响应私信消息
+  earlyWarningGroupEnable: true     #告警信息是否发送给群聊
+  earlyWarningPrivateEnable: false  #告警信息是否发送给私聊
+  earlyWarningGroupList: #告警信息发送群聊列表
+    - 1059769975
+  earlyWarningPrivateList:  #告警信息发送私聊列表
   admins:
     - 451060876
 ping-config:

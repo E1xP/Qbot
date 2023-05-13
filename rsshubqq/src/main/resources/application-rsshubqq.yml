@@ -19,6 +19,8 @@ rsshub:
   accessPort: 8081    #外部访问端口
   proxyUrl: 192.168.199.8 #代理地址
   proxyPort: 10809 #Http代理端口
+  errorInfo: false #是否开启RssHub错误提示
+  errorInfoCount: 0 #RssHub错误提示阈值; 为0则默认为列表数量
   rssList:
     - name: "test"
       url: "https://rss.shab.fun/twitter/user/VOIDInteractive/exclude_replies"
@@ -26,3 +28,4 @@ rsshub:
         - 1059769975 #测试群
       translate: false
       proxy: true
+      feedProxy: true

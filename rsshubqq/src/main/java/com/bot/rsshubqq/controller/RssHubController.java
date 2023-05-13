@@ -7,6 +7,7 @@ import com.bot.rsshubqq.mapper.RsshubMapper;
 import com.bot.rsshubqq.pojo.RssFeedItem;
 import com.bot.rsshubqq.service.RssHubService;
 import com.bot.rsshubqq.utils.RssHubServiceFactory;
+import com.bot.utils.service.EarlyWarningService;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,11 @@ public class RssHubController implements Runnable{
 
     @Resource
     RssHubServiceFactory rssHubServiceFactory;
+
+    @Resource
+    EarlyWarningService earlyWarningService;
+
+    int errorCount = 0;
 
     /**
      * 存放执行线程的Array
@@ -118,13 +124,37 @@ public class RssHubController implements Runnable{
     /**
      * 删除临时文件中的文件
      */
-    private void clearTempFile(){
-        File file=new File(rsshubFeedConfig.getTempPath());
-        if(file.exists()){
-            File[] files=file.listFiles();
-            for(File item:files){
+    private void clearTempFile() {
+        File file = new File(rsshubFeedConfig.getTempPath());
+        if (file.exists()) {
+            File[] files = file.listFiles();
+            for (File item : files) {
                 item.delete();
             }
+        }
+    }
+
+
+    /**
+     * 当遇到错误时
+     */
+    public void onError() {
+        synchronized (this) {
+            this.errorCount++;
+            if (errorCount >= (rsshubFeedConfig.getErrorInfoCount() <= 0 ? rsshubFeedConfig.getErrorInfoCount() : rsshubFeedConfig.getRssList().size())) {
+                earlyWarningService.sendEarlyWarning("RssHub抓取已连续错误" + errorCount + "次！");
+                log.error("RssHub触发告警");
+                this.errorCount = 0;
+            }
+        }
+    }
+
+    /**
+     * 当成功时
+     */
+    public void onSuccess() {
+        synchronized (this) {
+            this.errorCount = 0;
         }
     }
 }

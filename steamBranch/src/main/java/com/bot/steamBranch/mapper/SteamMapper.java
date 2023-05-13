@@ -60,6 +60,16 @@ public class SteamMapper {
     }
 
     /**
+     * 根据游戏名获取上次抓取结果
+     *
+     * @param gameName 游戏名称
+     * @return 上次Steam抓取结果，若不存在则创建
+     */
+    public SteamResult getResult(String gameName) {
+        return steamFileEntity.getResultMap().get(gameName);
+    }
+
+    /**
      * 用于持久化文件系统到文件
      */
     public void save() {

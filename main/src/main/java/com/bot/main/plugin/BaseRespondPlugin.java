@@ -33,18 +33,42 @@ import java.util.stream.Collectors;
 @Slf4j
 public class BaseRespondPlugin extends CQPlugin {
 
+    /**
+     * Bot服务
+     */
     @Resource
-    BotService botService;//Bot服务
+    BotService botService;
 
+    /**
+     * bot配置类
+     */
     @Resource
-    BotConfig botConfig;//bot配置类
+    BotConfig botConfig;
 
+    /**
+     * Ping相应配置类
+     */
     @Resource
-    PingConfig pingConfig;//Ping相应配置类
+    PingConfig pingConfig;
 
-    ArrayList<Long> lastFiveTime = new ArrayList<>();//最后发送时间列表
+    /**
+     * 最后发送时间列表
+     */
+    ArrayList<Long> lastFiveTime = new ArrayList<>();
 
+    /**
+     * 允许加入群列表
+     */
     List<Long> allowJoinGroupList;
+
+    /**
+     * 用于响应./help指令的内容
+     */
+    String helpMessage =
+            "./ping （用于激活机器人响应\n" +
+                    "./echo [复读内容] （用于使机器人复读，需admin\n" +
+                    "./help （用于查看帮助内容\n" +
+                    "./steam-help （用于查看Steam模块的帮助内容";
 
     @Override
     public int onGroupRequest(CoolQ cq, CQGroupRequestEvent event) {
@@ -109,6 +133,9 @@ public class BaseRespondPlugin extends CQPlugin {
                 case "./echo":
                     onEchoGroupMessage(cq, event);
                     break;
+                case "./help":
+                    onHelpGroupMessage(cq, event);
+                    break;
                 default:
                     onErrorCommandGroupMessage(cq, event);
                     break;
@@ -169,6 +196,16 @@ public class BaseRespondPlugin extends CQPlugin {
         CQUser sender = event.getSender();
         String message = CQCode.at(sender.getUserId()) + "指令错误：" + event.getMessage().split(" ")[0];
         cq.sendGroupMsg(event.getGroupId(), message, false);
+    }
+
+    /**
+     * 接收到群-帮助指令
+     *
+     * @param cq    cqBot实体类
+     * @param event 群消息事件
+     */
+    private void onHelpGroupMessage(CoolQ cq, CQGroupMessageEvent event) {
+        cq.sendGroupMsg(event.getGroupId(), helpMessage, false);
     }
 
     /*收到私聊消息*/

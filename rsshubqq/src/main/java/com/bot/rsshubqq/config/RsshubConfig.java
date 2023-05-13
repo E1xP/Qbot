@@ -71,4 +71,12 @@ public class RsshubConfig {
      * 图片下载失败通知
      */
     Long downloadFailNotifier;
+    /**
+     * 连续失败通知
+     */
+    boolean errorInfo;
+    /**
+     * 连续失败通知阈值
+     */
+    int errorInfoCount = 0;
 }
