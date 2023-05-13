@@ -18,6 +18,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
@@ -25,6 +26,8 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -84,15 +87,26 @@ public class RssHubService implements Runnable {
         SyndFeed syndFeed=null;//抓取内容
         //抓取Rss内容
         try {
-            log.debug(rssFeedItem.getName()+" = 开始抓取");
-            String requestUrl=rssFeedItem.getUrl()+(rssFeedItem.getUrl().contains("?")?"&":"?")+"limit=10";
+            log.debug(rssFeedItem.getName() + " = 开始抓取");
+            String requestUrl = rssFeedItem.getUrl() + (rssFeedItem.getUrl().contains("?") ? "&" : "?") + "limit=10";
+            if (rssFeedItem.isProxy()) {
+                //设置消息下载代理
+                SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+                requestFactory.setConnectTimeout(5 * 1000);
+                requestFactory.setReadTimeout(60 * 1000);
+                requestFactory.setProxy(new Proxy(Proxy.Type.HTTP,
+                        new InetSocketAddress(
+                                (rsshubConfig.getProxyUrl() != null && !rsshubConfig.getProxyUrl().isEmpty() ? rsshubConfig.getProxyUrl() : "127.0.0.1"),
+                                rsshubConfig.getProxyPort())));//无代理ip配置默认为127.0.0.1
+                restTemplate.setRequestFactory(requestFactory);
+            }
             syndFeed = restTemplate.execute(requestUrl, HttpMethod.GET, null, response -> {
                 SyndFeedInput input = new SyndFeedInput();
                 try {
                     return input.build(new XmlReader(response.getBody()));
                 } catch (FeedException e) {
                     //Feed无法解析
-                    log.error(rssFeedItem.getName()+" = 无法解析URL请求的内容：\n" + response.getBody());
+                    log.error(rssFeedItem.getName() + " = 无法解析URL请求的内容：\n" + response.getBody());
                     errorFlag.set(true);//设置抓取错误
                     return null;
                 }
