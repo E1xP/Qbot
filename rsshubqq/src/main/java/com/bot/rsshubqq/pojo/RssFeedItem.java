@@ -1,6 +1,5 @@
 package com.bot.rsshubqq.pojo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.util.List;
@@ -20,4 +19,5 @@ public class RssFeedItem {
     List<Long> groups;
     boolean translate;
     boolean proxy;
+    boolean feedProxy;
 }

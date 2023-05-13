@@ -89,7 +89,7 @@ public class RssHubService implements Runnable {
         try {
             log.debug(rssFeedItem.getName() + " = 开始抓取");
             String requestUrl = rssFeedItem.getUrl() + (rssFeedItem.getUrl().contains("?") ? "&" : "?") + "limit=10";
-            if (rssFeedItem.isProxy()) {
+            if (rssFeedItem.isFeedProxy()) {
                 //设置消息下载代理
                 SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
                 requestFactory.setConnectTimeout(5 * 1000);

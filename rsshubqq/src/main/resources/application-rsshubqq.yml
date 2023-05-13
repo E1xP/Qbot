@@ -28,3 +28,4 @@ rsshub:
         - 1059769975 #测试群
       translate: false
       proxy: true
+      feedProxy: true
