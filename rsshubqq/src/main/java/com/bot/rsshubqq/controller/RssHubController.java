@@ -48,6 +48,10 @@ public class RssHubController implements Runnable{
 
     int errorCount = 0;
 
+    boolean onWarningFlag = false;//是否已告警过
+
+    boolean isWarnThisPull = false;//本次是否告警
+
     /**
      * 存放执行线程的Array
      */
@@ -59,6 +63,7 @@ public class RssHubController implements Runnable{
     @Override
     public synchronized void run() {
         while (!Thread.currentThread().isInterrupted()) {
+            isWarnThisPull = false;
             clearTempFile();//清空临时文件夹
             log.info("开始抓取RssFeed：" + rsshubFeedConfig.getRssList().stream().map(RssFeedItem::getName).collect(Collectors.toList()));
             threads.clear();//清空线程所在
@@ -76,7 +81,7 @@ public class RssHubController implements Runnable{
                 }
             }
             log.debug("开始等待完成抓取");
-            while (isPullUnFinish()){
+            while (isPullUnFinish()) {
                 //当未抓取完时等待
                 synchronized (this) {
                     this.wait();
@@ -85,6 +90,12 @@ public class RssHubController implements Runnable{
             //完成抓取保存结果
             log.info("完成抓取");
             rsshubMapper.save();
+            if (!isWarnThisPull) {
+                if (onWarningFlag) {
+                    earlyWarningService.sendEarlyWarning("RssHub抓取错误已恢复");
+                }
+                onWarningFlag = false;
+            }
             this.wait();
         }
     }
@@ -141,8 +152,12 @@ public class RssHubController implements Runnable{
     public void onError() {
         synchronized (this) {
             this.errorCount++;
-            if (errorCount >= (rsshubFeedConfig.getErrorInfoCount() <= 0 ? rsshubFeedConfig.getErrorInfoCount() : rsshubFeedConfig.getRssList().size())) {
-                earlyWarningService.sendEarlyWarning("RssHub抓取已连续错误" + errorCount + "次！");
+            if (errorCount >= (rsshubFeedConfig.getErrorInfoCount() <= 0 ? rsshubFeedConfig.getRssList().size() : rsshubFeedConfig.getErrorInfoCount())) {
+                if (!onWarningFlag) {
+                    onWarningFlag = true;
+                    isWarnThisPull = true;
+                    earlyWarningService.sendEarlyWarning("RssHub抓取已连续错误" + errorCount + "次！");
+                }
                 log.error("RssHub触发告警");
                 this.errorCount = 0;
             }
