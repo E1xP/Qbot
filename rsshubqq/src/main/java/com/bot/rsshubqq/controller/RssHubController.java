@@ -90,12 +90,26 @@ public class RssHubController implements Runnable{
             //完成抓取保存结果
             log.info("完成抓取");
             rsshubMapper.save();
-            if (!isWarnThisPull) {
+
+            //告警逻辑
+            if (errorCount >= (rsshubFeedConfig.getErrorInfoCount() <= 0 ? rsshubFeedConfig.getRssList().size() : rsshubFeedConfig.getErrorInfoCount())) {
+                //触发告警
+                isWarnThisPull = true;
+                if (!onWarningFlag) {
+                    onWarningFlag = true;
+                    earlyWarningService.sendEarlyWarning("本轮RssHub抓取已累计错误" + errorCount + "次！");
+                }
+                log.error("RssHub触发告警");
+            } else {
+                //告警恢复
                 if (onWarningFlag) {
                     earlyWarningService.sendEarlyWarning("RssHub抓取错误已恢复");
                 }
                 onWarningFlag = false;
+                log.info("RssHub告警已恢复");
             }
+            this.errorCount = 0;
+
             this.wait();
         }
     }
@@ -152,15 +166,6 @@ public class RssHubController implements Runnable{
     public void onError() {
         synchronized (this) {
             this.errorCount++;
-            if (errorCount >= (rsshubFeedConfig.getErrorInfoCount() <= 0 ? rsshubFeedConfig.getRssList().size() : rsshubFeedConfig.getErrorInfoCount())) {
-                if (!onWarningFlag) {
-                    onWarningFlag = true;
-                    isWarnThisPull = true;
-                    earlyWarningService.sendEarlyWarning("RssHub抓取已连续错误" + errorCount + "次！");
-                }
-                log.error("RssHub触发告警");
-                this.errorCount = 0;
-            }
         }
     }
 
@@ -168,8 +173,8 @@ public class RssHubController implements Runnable{
      * 当成功时
      */
     public void onSuccess() {
-        synchronized (this) {
-            this.errorCount = 0;
-        }
+//        synchronized (this) {
+//            this.errorCount = 0;
+//        }
     }
 }
