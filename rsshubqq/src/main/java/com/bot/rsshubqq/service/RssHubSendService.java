@@ -6,6 +6,7 @@ import com.bot.rsshubqq.pojo.RssFeedItem;
 import com.bot.rsshubqq.pojo.RssItem;
 import com.bot.rsshubqq.utils.BreakOnlyOne;
 import com.bot.utils.CoolQUtils;
+import com.bot.utils.service.EarlyWarningService;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -104,6 +105,12 @@ public class RssHubSendService implements Runnable {
      */
     Pattern headerPattern = Pattern.compile("(?s)RT (.+?)<br>(.+)|(.+)$");
 
+    /**
+     * 预警消息发送
+     */
+    @Resource
+    EarlyWarningService earlyWarningService;
+
     RssHubSendService() {
     }
 
@@ -181,8 +188,9 @@ public class RssHubSendService implements Runnable {
                 if(apiData.getStatus().equals("ok")&&apiData.getRetcode()==0){
                     sendCount++;
                     log.debug(sendName+" = 发送群消息："+groupId+"，成功："+apiData);
-                }else{
-                    log.error(sendName + " = 发送群消息：" + groupId + "，失败：" + apiData);
+                }else {
+                    log.error(sendName + " = 发送群消息：" + groupId + "，失败：" + apiData + "\n消息内容：" + content);
+                    earlyWarningService.sendEarlyWarning("发送消息至群[" + groupId + "]失败：" + sendItem.getLink() + "\n返还消息：" + apiData);
                 }
                 if(rssFeedItem.getGroups().size()-1!=rssFeedItem.getGroups().indexOf(groupId)) {
                     Thread.sleep(100);
@@ -190,8 +198,6 @@ public class RssHubSendService implements Runnable {
             }
             if(sendCount==rssFeedItem.getGroups().size()) {
                 log.info(sendName + " ==>完成发送：" + sendItem.getLink());
-            }else{
-                log.error(sendName + " = 发送失败：" + sendItem.getLink()+"\n返还消息："+apiData+"\n消息内容："+content);
             }
         }else{
             log.error(sendName+" = 等待Bot5次失败放弃发送："+sendItem.getLink());

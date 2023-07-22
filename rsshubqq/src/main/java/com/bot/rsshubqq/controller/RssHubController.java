@@ -104,9 +104,9 @@ public class RssHubController implements Runnable{
                 //告警恢复
                 if (onWarningFlag) {
                     earlyWarningService.sendEarlyWarning("RssHub抓取错误已恢复");
+                    log.info("RssHub告警已恢复");
                 }
                 onWarningFlag = false;
-                log.info("RssHub告警已恢复");
             }
             this.errorCount = 0;
 
