@@ -124,6 +124,10 @@ public class RssHubSendService implements Runnable {
         //构建标题头与文字信息
         String toTranslateMessage;
         if(headerMatcher.find()&&(headerMatcher.group(1)!=null)){//识别是否是转发
+            if (rssFeedItem.isTwitterRTFilter()) {
+                log.info(sendName + " = 已过滤来自" + headerMatcher.group(1) + "的转发消息,链接:" + sendItem.getLink());
+                return;
+            }
             content ="【"+sendName+"】转发了【"+headerMatcher.group(1)+
                     "】的消息!\n----------------------\n内容："
                     +headerMatcher.group(2)+"\n";

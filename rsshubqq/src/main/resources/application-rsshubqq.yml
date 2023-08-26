@@ -29,3 +29,4 @@ rsshub:
       translate: false
       proxy: true
       feedProxy: true
+      twitterRTFilter: true #推特转发过滤
