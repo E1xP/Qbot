@@ -118,6 +118,7 @@ public class RssHubSendService implements Runnable {
         content = content.replaceAll("<br>(<video.+?></video>)|<br>(<img.+?>)", "$1$2");
         //构建标题头与文字信息
         String toTranslateMessage;
+        toTranslateMessage = content;
         if (sendItem.isRT()) {//识别是否是转发
             content = "【" + sendName + "】转发了【" + sendItem.getAuthor() +
                     "】的消息!\n----------------------\n内容："
@@ -126,7 +127,6 @@ public class RssHubSendService implements Runnable {
             content ="【"+sendName+"】更新了!\n----------------------\n内容："
                     + content + "\n";
         }
-        toTranslateMessage = content;
         content = content.replaceAll("<br>","\n");//将换行替换为\n
         //翻译处理
         if(rssFeedItem.isTranslate()){
