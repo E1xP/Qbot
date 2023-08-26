@@ -37,7 +37,7 @@ public class RssItem{
 
     public RssItem(SyndEntry syndEntry){
         this.description=syndEntry.getDescription().getValue();
-        this.link=syndEntry.getLink();
+        this.link = syndEntry.getLink().replaceAll("nitter\\.([A-Za-z0-9]+\\.)+[A-Za-z0-9]+", "twitter.com");
         this.pubDate=syndEntry.getPublishedDate();
         if (syndEntry.getTitle().startsWith("RT")) {
             isRT = true;
