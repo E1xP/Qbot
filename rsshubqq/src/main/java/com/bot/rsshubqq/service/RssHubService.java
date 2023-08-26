@@ -133,6 +133,10 @@ public class RssHubService implements Runnable {
             }
             for(SyndEntry item:syndFeed.getEntries()){
                 RssItem rssItem=new RssItem(item);
+                if (rssFeedItem.isTwitterRTFilter() && rssItem.isRT()) {
+                    //过滤转发
+                    continue;
+                }
                 rssItems.add(rssItem);
                 if(!isFirstTime) {
                     //非首次抓取

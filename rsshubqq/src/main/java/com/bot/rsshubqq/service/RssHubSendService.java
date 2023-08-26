@@ -100,10 +100,6 @@ public class RssHubSendService implements Runnable {
      * 视频预览图匹配Pattern
      */
     Pattern videoPattern = Pattern.compile("<video.*?poster=\"(.+?)\".*?></video>");
-    /**
-     * 头部转发匹配Pattern
-     */
-    Pattern headerPattern = Pattern.compile("(?s)RT (.+?)<br>(.+)|(.+)$");
 
     /**
      * 预警消息发送
@@ -120,23 +116,17 @@ public class RssHubSendService implements Runnable {
         content = sendItem.getDescription();
         //去除图片前换行
         content = content.replaceAll("<br>(<video.+?></video>)|<br>(<img.+?>)", "$1$2");
-        Matcher headerMatcher=headerPattern.matcher(content);
         //构建标题头与文字信息
         String toTranslateMessage;
-        if(headerMatcher.find()&&(headerMatcher.group(1)!=null)){//识别是否是转发
-            if (rssFeedItem.isTwitterRTFilter()) {
-                log.info(sendName + " = 已过滤来自" + headerMatcher.group(1) + "的转发消息,链接:" + sendItem.getLink());
-                return;
-            }
-            content ="【"+sendName+"】转发了【"+headerMatcher.group(1)+
+        if (sendItem.isRT()) {//识别是否是转发
+            content = "【" + sendName + "】转发了【" + sendItem.getAuthor() +
                     "】的消息!\n----------------------\n内容："
-                    +headerMatcher.group(2)+"\n";
-            toTranslateMessage=headerMatcher.group(2);
+                    + content + "\n";
         }else{
             content ="【"+sendName+"】更新了!\n----------------------\n内容："
-                    +headerMatcher.group(3)+"\n";
-            toTranslateMessage=headerMatcher.group(3);
+                    + content + "\n";
         }
+        toTranslateMessage = content;
         content = content.replaceAll("<br>","\n");//将换行替换为\n
         //翻译处理
         if(rssFeedItem.isTranslate()){
