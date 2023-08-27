@@ -84,7 +84,7 @@ public class SteamResult {
             steamBranchItem.setName(branchName);
             steamBranchItem.setTimeStamp(branches.get(branchName).getTimeupdated());
             steamBranchItem.setBuildId(branches.get(branchName).getBuildid());
-            steamBranchItem.setPublic(branches.get(branchName).getIsClose() == 1);
+            steamBranchItem.setPublic(branches.get(branchName).getIsClose() == 0);
             steamBranchItemMap.put(branchName, steamBranchItem);
         }
         this.steamBranchItemMap = steamBranchItemMap;
