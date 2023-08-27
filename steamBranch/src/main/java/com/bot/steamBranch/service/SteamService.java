@@ -96,7 +96,7 @@ public class SteamService implements Runnable {
                 process.destroy();
                 finish();
             }
-            log.debug(steamFeedItem.getName() + "原始结果:" + stringBuilder.toString());
+            log.debug(steamFeedItem.getName() + "原始结果:" + stringBuilder);
             //处理V社格式为标准Json格式
             int strStart = stringBuilder.indexOf("{");
             int strEnd = stringBuilder.lastIndexOf("}");
@@ -167,7 +167,7 @@ public class SteamService implements Runnable {
                                         haspublicBranch = true;
                                     }
                                     resultStr
-                                            .append(resultItem.getIsClose() == 1 ? "开发分支-" : "公开分支-")
+                                            .append(resultItem.getIsClose() == 1 ? "\uD83D\uDEE0开发分支-" : "\uD83D\uDCE2公开分支-")
                                             .append(branchName).append(":\n")
                                             .append("\t版本号：").append(resultItem.getBuildid()).append("\n")
                                             .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeupdated() * 1000))).append("\n")
@@ -185,7 +185,7 @@ public class SteamService implements Runnable {
                         StringBuilder sendStrBuilder = new StringBuilder();
                         Date currentDate = new Date();
                         sendStrBuilder
-                                .append(haspublicBranch ? "※正式更新※" : "=非公开分支=").append("\n")
+                                .append(haspublicBranch ? "\uD83D\uDCE2正式更新\uD83D\uDCE2" : "\uD83D\uDEE0开发更新\uD83D\uDEE0").append("\n")
                                 .append("【").append(gameName).append("】Steam更新了!\n")
                                 .append("共有").append(updateBranchCount).append("个分支更新\n")
                                 .append("======================\n")
