@@ -42,10 +42,10 @@ public class SteamBranchItem implements Comparable<SteamBranchItem> {
             return this.isPublic ? 1 : -1;
         } else {
             //更新时间
-            if (this.timeStamp == null) {
-                return obj.timeStamp == null ? 0 : -1;
+            if (obj.timeStamp == null) {
+                return this.timeStamp == null ? 0 : 1;
             }
-            return this.timeStamp.compareTo(obj.timeStamp);
+            return obj.timeStamp.compareTo(this.timeStamp);
         }
     }
 }
