@@ -143,11 +143,17 @@ public class SteamBranchPlugin extends CQPlugin {
                 .append("个分支\n")
                 .append("======================\n(非公开仅最近半年活动分支)\n");
         //构造历史分支结果
-        resultList.forEach(resultItem -> {
-            strBuilder.append("- ").append(resultItem.isPublic() ? "\uD83D\uDEE0开发分支-" : "\uD83D\uDCE2公开分支-").append(resultItem.getName()).append(" :\n")
+        boolean ispublic = false;
+        strBuilder.append("= \uD83D\uDCE2公开分支\n");
+        for (SteamBranchItem resultItem : resultList) {
+            if (ispublic && !resultItem.isPublic()) {
+                strBuilder.append("= \uD83D\uDEE0开发分支\n");
+            }
+            strBuilder.append("  - ").append(resultItem.getName()).append(" :\n")
                     .append("\t版本号：").append(resultItem.getBuildId()).append("\n")
                     .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeStamp() * 1000))).append("\n");
-        });
+            ispublic = resultItem.isPublic();
+        }
         strBuilder.append("======================");
         String str = new String(strBuilder);
         cq.sendGroupMsg(event.getGroupId(), CQCodeExtend.reply(event.getMessageId()) + str, false);
