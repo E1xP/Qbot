@@ -39,7 +39,7 @@ public class SteamBranchItem implements Comparable<SteamBranchItem> {
     public int compareTo(SteamBranchItem obj) {
         if (this.isPublic() != obj.isPublic) {
             //是否公开
-            return this.isPublic ? 1 : -1;
+            return this.isPublic ? -1 : 1;
         } else {
             //更新时间
             if (obj.timeStamp == null) {
