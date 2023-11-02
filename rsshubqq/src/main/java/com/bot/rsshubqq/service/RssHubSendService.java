@@ -224,9 +224,7 @@ public class RssHubSendService implements Runnable {
      * @param mediaUrl 媒体Url
      * @return 文件实体
      */
-    @SneakyThrows
     private AtomicReference<File> downMedia(String mediaUrl) {
-        mediaUrl = URLDecoder.decode(mediaUrl, "UTF-8");
         RestTemplate restTemplate = new RestTemplate();
         log.info(sendName + "开始下载图片:" + mediaUrl);
         if (rssFeedItem.isProxy()) {
@@ -296,7 +294,9 @@ public class RssHubSendService implements Runnable {
      * @param mediaUrl 媒体图片URL
      * @param message 消息StringBuilder
      */
-    private void downAndAdd(String mediaUrl,StringBuilder message){
+    @SneakyThrows
+    private void downAndAdd(String mediaUrl, StringBuilder message) {
+        mediaUrl = URLDecoder.decode(mediaUrl, "UTF-8");
         AtomicReference<File> downloadFile = downMedia(mediaUrl);
         if(downloadFile!=null) {
             log.debug(sendName+" = 文件下载到："+downloadFile);
