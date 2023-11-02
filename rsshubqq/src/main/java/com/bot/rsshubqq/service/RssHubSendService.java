@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -223,7 +224,9 @@ public class RssHubSendService implements Runnable {
      * @param mediaUrl 媒体Url
      * @return 文件实体
      */
+    @SneakyThrows
     private AtomicReference<File> downMedia(String mediaUrl) {
+        URLDecoder.decode(mediaUrl, "UTF-8");
         RestTemplate restTemplate = new RestTemplate();
         log.info(sendName + "开始下载图片:" + mediaUrl);
         if (rssFeedItem.isProxy()) {
