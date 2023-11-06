@@ -19,4 +19,6 @@ public interface EarlyWarningService {
 
     void sendEarlyWarning(String message);
 
+    void warnOnEmail(String subject, String message);
+
 }

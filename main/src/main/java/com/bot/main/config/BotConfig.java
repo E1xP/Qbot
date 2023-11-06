@@ -24,6 +24,8 @@ public class BotConfig {
     List<Long> admins;      //管理员列表
     boolean earlyWarningGroupEnable = false;    //告警信息是否发送给群聊
     boolean earlyWarningPrivateEnable = false;  //告警信息是否发送给私聊
+    boolean earlyWarningEmailEnable = false;    //告警信息是否发送给邮件
     List<Long> earlyWarningGroupList = new ArrayList<>();   //告警信息发送群聊列表
     List<Long> earlyWarningPrivateList = new ArrayList<>(); //告警信息发送私聊列表
+    List<String> earlyWarningEmailList = new ArrayList<>(); //告警信息发送邮件列表
 }

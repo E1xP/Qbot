@@ -32,6 +32,7 @@ import java.net.Proxy;
 import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -90,6 +91,8 @@ public class RssHubSendService implements Runnable {
     ArrayList<String> videosUrl;
 
     final SimpleDateFormat formatter = new SimpleDateFormat("MM月dd日 HH:mm:ss");
+
+    final SimpleDateFormat timeFormatter = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss");
 
     String content;
 
@@ -196,6 +199,7 @@ public class RssHubSendService implements Runnable {
             }
         }else{
             log.error(sendName+" = 等待Bot5次失败放弃发送："+sendItem.getLink());
+            earlyWarningService.warnOnEmail("RssHub-告警-Bot获取", sendName + "\n无法获取到Bot实体！\n告警时间" + timeFormatter.format(new Date()));
         }
     }
 

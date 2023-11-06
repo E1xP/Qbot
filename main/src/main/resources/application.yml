@@ -14,9 +14,12 @@ bot:
   replyPrivate: true  #响应私信消息
   earlyWarningGroupEnable: true     #告警信息是否发送给群聊
   earlyWarningPrivateEnable: false  #告警信息是否发送给私聊
+  earlyWarningEmailEnable: true    #告警信息是否发送给Email
   earlyWarningGroupList: #告警信息发送群聊列表
     - 1059769975
   earlyWarningPrivateList:  #告警信息发送私聊列表
+  earlyWarningEmailList: #告警信息发送邮箱列表
+    - e1xp@foxmail.com
   admins:
     - 451060876
 ping-config:
@@ -32,3 +35,10 @@ logging:
 rest-template-config:
   connectionTimeout: 5 #设置网络连接超时（s
   readTimeout: 60      #设置读取超时（s
+email:
+  username: ""  #账户
+  password: ""  #密码
+  smtpHost: ""  #SMTP地址
+  smtpPort: ""  #SMTP端口
+  smtpAuth: "true"  #是否需要认证
+  smtpTls: "true"  #是否启用TLS
