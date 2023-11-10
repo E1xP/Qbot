@@ -47,6 +47,7 @@ public class EmailServiceImpl implements EmailService {
                 list.add(new InternetAddress(email));
             }
             message.setRecipients(Message.RecipientType.TO, list.toArray(new InternetAddress[0]));
+            Transport.send(message);
         } catch (MessagingException e) {
             log.error("邮件发送错误", e);
         }
@@ -57,7 +58,7 @@ public class EmailServiceImpl implements EmailService {
         props.put("mail.smtp.host", emailConfig.getSmtpHost());
         props.put("mail.smtp.port", emailConfig.getSmtpPort());
         props.put("mail.smtp.auth", emailConfig.getSmtpAuth());
-        props.put("mail.smtp.starttls.enable", emailConfig.getSmtpTls());
+        props.put("mail.smtp.ssl.enable", emailConfig.getSmtpTls());
         return Session.getInstance(props, new Authenticator() {
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
