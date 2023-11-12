@@ -196,8 +196,11 @@ public class RssHubController implements Runnable{
         synchronized (this) {
 //            this.errorCount = 0;
             if (branchErrorMap.containsKey(branchName)) {
+                int errrorCount = branchErrorMap.get(branchName);
                 branchErrorMap.remove(branchName);
-                earlyWarningService.sendEarlyWarning("RssHub-" + branchName + ":抓取错误已恢复");
+                if (errrorCount > rsshubFeedConfig.getBranchErrorInfoCount()) {
+                    earlyWarningService.sendEarlyWarning("RssHub-" + branchName + ":抓取错误已恢复");
+                }
             }
         }
     }
