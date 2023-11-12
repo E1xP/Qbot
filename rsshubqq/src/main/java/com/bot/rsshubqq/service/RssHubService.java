@@ -184,17 +184,13 @@ public class RssHubService implements Runnable {
      * 当错误时调用
      */
     void onError() {
-        if (rsshubConfig.isErrorInfo()) {
-            rssHubController.onError();
-        }
+        rssHubController.onError(rssFeedItem.getName());
     }
 
     /**
      * 当成功时调用
      */
     void onSuccess() {
-        if (rsshubConfig.isErrorInfo()) {
-            rssHubController.onSuccess();
-        }
+        rssHubController.onSuccess(rssFeedItem.getName());
     }
 }

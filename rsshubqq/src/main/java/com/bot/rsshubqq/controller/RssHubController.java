@@ -16,6 +16,8 @@ import org.springframework.stereotype.Controller;
 import javax.annotation.Resource;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -47,6 +49,8 @@ public class RssHubController implements Runnable{
     EarlyWarningService earlyWarningService;
 
     int errorCount = 0;
+
+    Map<String, Integer> branchErrorMap = new HashMap<>();
 
     boolean onWarningFlag = false;//是否已告警过
 
@@ -163,18 +167,38 @@ public class RssHubController implements Runnable{
     /**
      * 当遇到错误时
      */
-    public void onError() {
+    public void onError(String branchName) {
         synchronized (this) {
-            this.errorCount++;
+            //总体告警
+            if (rsshubFeedConfig.isErrorInfo()) {
+                this.errorCount++;
+            }
+            //分支告警
+            if (!rsshubFeedConfig.isBranchErrorInfo()) {
+                return;
+            }
+            if (branchErrorMap.containsKey(branchName)) {
+                int errorCount = branchErrorMap.get(branchName);
+                branchErrorMap.put(branchName, ++errorCount);
+                if (errorCount == rsshubFeedConfig.getBranchErrorInfoCount()) {
+                    earlyWarningService.sendEarlyWarning("RssHub-" + branchName + ":累计抓取错误" + errorCount + "次");
+                }
+            } else {
+                branchErrorMap.put(branchName, 1);
+            }
         }
     }
 
     /**
      * 当成功时
      */
-    public void onSuccess() {
-//        synchronized (this) {
+    public void onSuccess(String branchName) {
+        synchronized (this) {
 //            this.errorCount = 0;
-//        }
+            if (branchErrorMap.containsKey(branchName)) {
+                branchErrorMap.remove(branchName);
+                earlyWarningService.sendEarlyWarning("RssHub-" + branchName + ":抓取错误已恢复");
+            }
+        }
     }
 }
