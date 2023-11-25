@@ -9,6 +9,7 @@ import com.bot.steamBranch.pojo.SteamResult;
 import com.bot.steamBranch.pojo.dto.SteamResultBranchDto;
 import com.bot.steamBranch.utils.SteamSendServiceFactory;
 import com.bot.utils.CoolQUtils;
+import com.bot.utils.service.EarlyWarningService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,10 +24,13 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.io.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * @author E1xP@foxmail.com
@@ -60,6 +64,9 @@ public class SteamService implements Runnable {
 
     @Resource
     ObjectMapper objectMapper;
+
+    @Resource
+    EarlyWarningService earlyWarningService;
 
     private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM月dd日 HH:mm:ss");
 
@@ -209,6 +216,7 @@ public class SteamService implements Runnable {
                             log.debug("开始发送消息：" + steamFeedItem.getName() + "\n群：" + steamFeedItem.getGroupList() + "\n内容：" + content);
                             int sendCount = 0;
                             ApiData<MessageData> apiData = null;
+                            List<String> failSendList = new ArrayList<>();
                             for (long groupId : steamFeedItem.getGroupList()) {
                                 apiData = coolQ.sendGroupMsg(groupId, content, false);
                                 //发送后判断单个消息
@@ -216,6 +224,7 @@ public class SteamService implements Runnable {
                                     sendCount++;
                                     log.debug(sendName + " = 发送群消息：" + groupId + "，成功：" + apiData);
                                 } else {
+                                    failSendList.add("群：" + groupId + "-" + apiData);
                                     log.error(sendName + " = 发送群消息：" + groupId + "，失败：" + apiData);
                                 }
                                 if (steamFeedItem.getGroupList().size() - 1 != steamFeedItem.getGroupList().indexOf(groupId)) {
@@ -225,9 +234,10 @@ public class SteamService implements Runnable {
                             if (sendCount == steamFeedItem.getGroupList().size()) {
                                 log.info(sendName + " ==>完成发送：" + steamFeedItem.getName());
                             } else {
-                                log.error(sendName + " = 发送失败：" + steamFeedItem.getName() + "\n返还消息：" + apiData + "\n消息内容：" + content);
+                                earlyWarningService.warnOnEmail("Steam更新抓取告警-发送失败", failSendList.stream().map(String::valueOf).collect(Collectors.joining("\n")) + "\n消息内容:" + content);
                             }
                         } else {
+                            earlyWarningService.warnOnEmail("Steam更新抓取告警-发送失败", "未获取到相应QQ机器人");
                             log.error(sendName + " = 等待Bot5次失败放弃发送：" + steamFeedItem.getName());
                         }
                     }

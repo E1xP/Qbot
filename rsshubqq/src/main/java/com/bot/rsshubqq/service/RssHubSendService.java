@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 
 /**
@@ -180,6 +181,7 @@ public class RssHubSendService implements Runnable {
             log.debug("开始发送消息：" + sendItem.getLink() + "\n群：" + rssFeedItem.getGroups() + "\n内容：" + content);
             int sendCount=0;
             ApiData<MessageData> apiData = null;
+            List<String> failSendList = new ArrayList<>();
             for (long groupId : rssFeedItem.getGroups()) {
                 apiData = coolQ.sendGroupMsg(groupId, content, false);
                 //发送后判断单个消息
@@ -187,7 +189,7 @@ public class RssHubSendService implements Runnable {
                     sendCount++;
                     log.debug(sendName+" = 发送群消息："+groupId+"，成功："+apiData);
                 }else {
-                    log.error(sendName + " = 发送群消息：" + groupId + "，失败：" + apiData + "\n消息内容：" + content);
+                    failSendList.add("群：" + groupId + "-" + apiData);
                     earlyWarningService.sendEarlyWarning("发送消息至群[" + groupId + "]失败：" + sendItem.getLink() + "\n返还消息：" + apiData);
                 }
                 if(rssFeedItem.getGroups().size()-1!=rssFeedItem.getGroups().indexOf(groupId)) {
@@ -196,6 +198,8 @@ public class RssHubSendService implements Runnable {
             }
             if(sendCount==rssFeedItem.getGroups().size()) {
                 log.info(sendName + " ==>完成发送：" + sendItem.getLink());
+            } else {
+                earlyWarningService.warnOnEmail("Steam更新抓取告警-发送失败", failSendList.stream().map(String::valueOf).collect(Collectors.joining("\n")) + "\n消息内容:" + content);
             }
         }else{
             log.error(sendName+" = 等待Bot5次失败放弃发送："+sendItem.getLink());
