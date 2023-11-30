@@ -234,10 +234,10 @@ public class SteamService implements Runnable {
                             if (sendCount == steamFeedItem.getGroupList().size()) {
                                 log.info(sendName + " ==>完成发送：" + steamFeedItem.getName());
                             } else {
-                                earlyWarningService.warnOnEmail("Steam更新抓取告警-发送失败", failSendList.stream().map(String::valueOf).collect(Collectors.joining("\n")) + "\n消息内容:" + content);
+                                earlyWarningService.warnOnEmail("Steam更新告警-发送失败:" + sendName, failSendList.stream().map(String::valueOf).collect(Collectors.joining("\n")) + "\n消息内容:" + content);
                             }
                         } else {
-                            earlyWarningService.warnOnEmail("Steam更新抓取告警-发送失败", "未获取到相应QQ机器人");
+                            earlyWarningService.warnOnEmail("Steam更新告警-发送失败", sendName + "\n无法获取到Bot实体！");
                             log.error(sendName + " = 等待Bot5次失败放弃发送：" + steamFeedItem.getName());
                         }
                     }

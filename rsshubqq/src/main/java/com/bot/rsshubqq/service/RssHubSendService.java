@@ -190,7 +190,7 @@ public class RssHubSendService implements Runnable {
                     log.debug(sendName+" = 发送群消息："+groupId+"，成功："+apiData);
                 }else {
                     failSendList.add("群：" + groupId + "-" + apiData);
-                    earlyWarningService.sendEarlyWarning("发送消息至群[" + groupId + "]失败：" + sendItem.getLink() + "\n返还消息：" + apiData);
+                    log.error(sendName + "-发送消息至群[" + groupId + "]失败：" + sendItem.getLink() + "\n返还消息：" + apiData);
                 }
                 if(rssFeedItem.getGroups().size()-1!=rssFeedItem.getGroups().indexOf(groupId)) {
                     Thread.sleep(100);
@@ -199,7 +199,7 @@ public class RssHubSendService implements Runnable {
             if(sendCount==rssFeedItem.getGroups().size()) {
                 log.info(sendName + " ==>完成发送：" + sendItem.getLink());
             } else {
-                earlyWarningService.warnOnEmail("Steam更新抓取告警-发送失败", failSendList.stream().map(String::valueOf).collect(Collectors.joining("\n")) + "\n消息内容:" + content);
+                earlyWarningService.warnOnEmail("RssHub告警-发送失败:" + sendName, failSendList.stream().map(String::valueOf).collect(Collectors.joining("\n")) + "\n消息内容:" + content);
             }
         }else{
             log.error(sendName+" = 等待Bot5次失败放弃发送："+sendItem.getLink());
