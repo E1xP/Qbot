@@ -208,10 +208,10 @@ public class SteamService implements Runnable {
                             coolQ = CoolQUtils.getCoolQ();
                             if (coolQ == null) {
                                 sendTryCount++;
-                                log.error(sendName + " = 发送获取不到Bot实体，延迟60s后再尝试发送");
-                                Thread.sleep(1000 * 60);
+                                log.error(sendName + " = 发送获取不到Bot实体，延迟10s后再尝试发送");
+                                Thread.sleep(1000 * 10);
                             }
-                        } while (coolQ == null && sendTryCount < 5);//仅重试5次
+                        } while (coolQ == null && sendTryCount < 3);//仅重试5次
                         if (coolQ != null) {
                             log.debug("开始发送消息：" + steamFeedItem.getName() + "\n群：" + steamFeedItem.getGroupList() + "\n内容：" + content);
                             int sendCount = 0;
@@ -237,7 +237,7 @@ public class SteamService implements Runnable {
                                 earlyWarningService.warnOnEmail("Steam更新告警-发送失败:" + sendName, failSendList.stream().map(String::valueOf).collect(Collectors.joining("\n")) + "\n消息内容:" + content);
                             }
                         } else {
-                            earlyWarningService.warnOnEmail("Steam更新告警-发送失败", sendName + "\n无法获取到Bot实体！");
+                            earlyWarningService.warnOnEmail("Steam更新告警-发送失败", sendName + "\n无法获取到Bot实体！" + "\n消息内容:" + content);
                             log.error(sendName + " = 等待Bot5次失败放弃发送：" + steamFeedItem.getName());
                         }
                     }

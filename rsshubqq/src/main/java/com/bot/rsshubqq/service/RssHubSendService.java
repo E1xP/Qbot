@@ -173,10 +173,10 @@ public class RssHubSendService implements Runnable {
             coolQ = CoolQUtils.getCoolQ();
             if(coolQ==null){
                 sendTryCount++;
-                log.error(sendName+" = 发送获取不到Bot实体，延迟60s后再尝试发送");
-                Thread.sleep(1000*60);
+                log.error(sendName + " = 发送获取不到Bot实体，延迟10s后再尝试发送");
+                Thread.sleep(1000 * 10);
             }
-        }while(coolQ==null&&sendTryCount<5);//仅重试5次
+        } while (coolQ == null && sendTryCount < 3);//仅重试3次
         if(coolQ!=null) {
             log.debug("开始发送消息：" + sendItem.getLink() + "\n群：" + rssFeedItem.getGroups() + "\n内容：" + content);
             int sendCount=0;
@@ -203,7 +203,7 @@ public class RssHubSendService implements Runnable {
             }
         }else{
             log.error(sendName+" = 等待Bot5次失败放弃发送："+sendItem.getLink());
-            earlyWarningService.warnOnEmail("RssHub-告警-Bot获取", sendName + "\n无法获取到Bot实体！\n告警时间" + timeFormatter.format(new Date()));
+            earlyWarningService.warnOnEmail("RssHub-告警-Bot获取", sendName + "\n无法获取到Bot实体！\n告警时间" + timeFormatter.format(new Date()) + "\n消息内容:" + content);
         }
     }
 
