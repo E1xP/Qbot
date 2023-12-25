@@ -74,9 +74,19 @@ public class RsshubConfig {
     /**
      * 连续失败通知
      */
-    boolean errorInfo;
+    boolean errorInfo = false;
     /**
      * 连续失败通知阈值
      */
     int errorInfoCount = 0;
+
+    /**
+     * 单个分支连续失败告警
+     */
+    boolean branchErrorInfo = false;
+
+    /**
+     *
+     */
+    int branchErrorInfoCount = 0;
 }

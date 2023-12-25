@@ -3,6 +3,7 @@ package com.bot.main.service;
 import com.bot.main.config.BotConfig;
 import com.bot.utils.CoolQUtils;
 import com.bot.utils.service.EarlyWarningService;
+import com.bot.utils.service.EmailService;
 import lombok.extern.slf4j.Slf4j;
 import net.lz1998.cq.robot.CoolQ;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,9 @@ public class EarlyWarningServiceImpl implements EarlyWarningService {
     private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM月dd日 HH:mm:ss");
     @Resource
     BotConfig botConfig;
+
+    @Resource
+    EmailService emailService;
 
     /**
      * 发送私聊消息
@@ -74,19 +78,35 @@ public class EarlyWarningServiceImpl implements EarlyWarningService {
      */
     @Override
     public void sendEarlyWarning(String message) {
-        StringBuilder str = new StringBuilder();
         Date currentDate = new Date();
-        str.append("X预警信息X")
-                .append("\n----------------------\n")
-                .append(message)
-                .append("\n----------------------\n")
-                .append("告警时间:").append(simpleDateFormat.format(currentDate));
-        String sendMessage = String.valueOf(str);
+        String str = "X预警信息X" +
+                "\n----------------------\n" +
+                message +
+                "\n----------------------\n" +
+                "告警时间:" + simpleDateFormat.format(currentDate);
+        String sendMessage = str;
         if (botConfig.isEarlyWarningGroupEnable()) {
             warnOnGroupMessage(sendMessage);
         }
         if (botConfig.isEarlyWarningPrivateEnable()) {
             warnOnPrivateMessage(sendMessage);
+        }
+        if (botConfig.isEarlyWarningEmailEnable()) {
+            warnOnEmail("RssHub-告警信息", sendMessage);
+        }
+    }
+
+    /**
+     * 发送Email信息
+     *
+     * @param subject 告警邮件标题
+     * @param message 告警消息
+     */
+    @Override
+    public void warnOnEmail(String subject, String message) {
+        if (botConfig.isEarlyWarningEmailEnable() && !botConfig.getEarlyWarningEmailList().isEmpty()) {
+            log.info("发送告警邮件：{}-{}-{}", botConfig.getEarlyWarningEmailList(), subject, message);
+            emailService.sendEmail(botConfig.getEarlyWarningEmailList(), subject, message);
         }
     }
 }

@@ -89,17 +89,17 @@ public class RssHubService implements Runnable {
         try {
             log.debug(rssFeedItem.getName() + " = 开始抓取");
             String requestUrl = rssFeedItem.getUrl() + (rssFeedItem.getUrl().contains("?") ? "&" : "?") + "limit=10";
+            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+            requestFactory.setConnectTimeout(5 * 1000);
+            requestFactory.setReadTimeout(60 * 1000);
+            //设置消息下载代理
             if (rssFeedItem.isFeedProxy()) {
-                //设置消息下载代理
-                SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-                requestFactory.setConnectTimeout(5 * 1000);
-                requestFactory.setReadTimeout(60 * 1000);
                 requestFactory.setProxy(new Proxy(Proxy.Type.HTTP,
                         new InetSocketAddress(
                                 (rsshubConfig.getProxyUrl() != null && !rsshubConfig.getProxyUrl().isEmpty() ? rsshubConfig.getProxyUrl() : "127.0.0.1"),
                                 rsshubConfig.getProxyPort())));//无代理ip配置默认为127.0.0.1
-                restTemplate.setRequestFactory(requestFactory);
             }
+            restTemplate.setRequestFactory(requestFactory);
             syndFeed = restTemplate.execute(requestUrl, HttpMethod.GET, null, response -> {
                 SyndFeedInput input = new SyndFeedInput();
                 try {
@@ -133,6 +133,10 @@ public class RssHubService implements Runnable {
             }
             for(SyndEntry item:syndFeed.getEntries()){
                 RssItem rssItem=new RssItem(item);
+                if (rssFeedItem.isTwitterRTFilter() && rssItem.isRT()) {
+                    //过滤转发
+                    continue;
+                }
                 rssItems.add(rssItem);
                 if(!isFirstTime) {
                     //非首次抓取
@@ -180,17 +184,13 @@ public class RssHubService implements Runnable {
      * 当错误时调用
      */
     void onError() {
-        if (rsshubConfig.isErrorInfo()) {
-            rssHubController.onError();
-        }
+        rssHubController.onError(rssFeedItem.getName());
     }
 
     /**
      * 当成功时调用
      */
     void onSuccess() {
-        if (rsshubConfig.isErrorInfo()) {
-            rssHubController.onSuccess();
-        }
+        rssHubController.onSuccess(rssFeedItem.getName());
     }
 }

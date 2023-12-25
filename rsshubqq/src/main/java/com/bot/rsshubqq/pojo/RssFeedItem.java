@@ -20,4 +20,5 @@ public class RssFeedItem {
     boolean translate;
     boolean proxy;
     boolean feedProxy;
+    boolean twitterRTFilter;
 }

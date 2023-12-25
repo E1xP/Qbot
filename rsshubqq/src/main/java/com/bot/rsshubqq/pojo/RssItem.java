@@ -1,7 +1,11 @@
 package com.bot.rsshubqq.pojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.rometools.rome.feed.module.DCModuleImpl;
+import com.rometools.rome.feed.module.Module;
 import com.rometools.rome.feed.synd.SyndEntry;
 import lombok.Data;
+
 import java.util.Date;
 
 /**
@@ -20,11 +24,31 @@ public class RssItem{
     String link;
     /** 内容发布时间 */
     Date pubDate;
+    /**
+     * 转发来自
+     */
+    @JsonIgnore
+    String author = null;
+    /**
+     * 是否转发
+     */
+    @JsonIgnore
+    boolean isRT = false;
 
     public RssItem(SyndEntry syndEntry){
         this.description=syndEntry.getDescription().getValue();
-        this.link=syndEntry.getLink();
+        this.link = syndEntry.getLink().replaceAll("nitter\\.([\\S]+\\.)+[\\S]+?\\/", "twitter.com/");
         this.pubDate=syndEntry.getPublishedDate();
+        if (syndEntry.getTitle().startsWith("RT")) {
+            isRT = true;
+        }
+        if (!syndEntry.getModules().isEmpty()) {
+            for (Module item : syndEntry.getModules()) {
+                if (item instanceof DCModuleImpl) {
+                    author = ((DCModuleImpl) item).getCreator();
+                }
+            }
+        }
     }
 
     public RssItem(String description,String link,Date pubDate){

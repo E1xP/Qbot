@@ -9,6 +9,7 @@ import com.bot.steamBranch.pojo.SteamResult;
 import com.bot.steamBranch.pojo.dto.SteamResultBranchDto;
 import com.bot.steamBranch.utils.SteamSendServiceFactory;
 import com.bot.utils.CoolQUtils;
+import com.bot.utils.service.EarlyWarningService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,10 +24,13 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.io.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * @author E1xP@foxmail.com
@@ -60,6 +64,9 @@ public class SteamService implements Runnable {
 
     @Resource
     ObjectMapper objectMapper;
+
+    @Resource
+    EarlyWarningService earlyWarningService;
 
     private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM月dd日 HH:mm:ss");
 
@@ -96,7 +103,7 @@ public class SteamService implements Runnable {
                 process.destroy();
                 finish();
             }
-            log.debug(steamFeedItem.getName() + "原始结果:" + stringBuilder.toString());
+            log.debug(steamFeedItem.getName() + "原始结果:" + stringBuilder);
             //处理V社格式为标准Json格式
             int strStart = stringBuilder.indexOf("{");
             int strEnd = stringBuilder.lastIndexOf("}");
@@ -167,7 +174,7 @@ public class SteamService implements Runnable {
                                         haspublicBranch = true;
                                     }
                                     resultStr
-                                            .append(resultItem.getIsClose() == 1 ? "开发分支-" : "公开分支-")
+                                            .append(resultItem.getIsClose() == 1 ? "\uD83D\uDEE0开发分支-" : "\uD83D\uDCE2公开分支-")
                                             .append(branchName).append(":\n")
                                             .append("\t版本号：").append(resultItem.getBuildid()).append("\n")
                                             .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeupdated() * 1000))).append("\n")
@@ -185,7 +192,7 @@ public class SteamService implements Runnable {
                         StringBuilder sendStrBuilder = new StringBuilder();
                         Date currentDate = new Date();
                         sendStrBuilder
-                                .append(haspublicBranch ? "※正式更新※" : "=非公开分支=").append("\n")
+                                .append(haspublicBranch ? "\uD83D\uDCE2正式更新\uD83D\uDCE2" : "\uD83D\uDEE0开发更新\uD83D\uDEE0").append("\n")
                                 .append("【").append(gameName).append("】Steam更新了!\n")
                                 .append("共有").append(updateBranchCount).append("个分支更新\n")
                                 .append("======================\n")
@@ -201,14 +208,15 @@ public class SteamService implements Runnable {
                             coolQ = CoolQUtils.getCoolQ();
                             if (coolQ == null) {
                                 sendTryCount++;
-                                log.error(sendName + " = 发送获取不到Bot实体，延迟60s后再尝试发送");
-                                Thread.sleep(1000 * 60);
+                                log.error(sendName + " = 发送获取不到Bot实体，延迟10s后再尝试发送");
+                                Thread.sleep(1000 * 10);
                             }
-                        } while (coolQ == null && sendTryCount < 5);//仅重试5次
+                        } while (coolQ == null && sendTryCount < 3);//仅重试5次
                         if (coolQ != null) {
                             log.debug("开始发送消息：" + steamFeedItem.getName() + "\n群：" + steamFeedItem.getGroupList() + "\n内容：" + content);
                             int sendCount = 0;
                             ApiData<MessageData> apiData = null;
+                            List<String> failSendList = new ArrayList<>();
                             for (long groupId : steamFeedItem.getGroupList()) {
                                 apiData = coolQ.sendGroupMsg(groupId, content, false);
                                 //发送后判断单个消息
@@ -216,6 +224,7 @@ public class SteamService implements Runnable {
                                     sendCount++;
                                     log.debug(sendName + " = 发送群消息：" + groupId + "，成功：" + apiData);
                                 } else {
+                                    failSendList.add("群：" + groupId + "-" + apiData);
                                     log.error(sendName + " = 发送群消息：" + groupId + "，失败：" + apiData);
                                 }
                                 if (steamFeedItem.getGroupList().size() - 1 != steamFeedItem.getGroupList().indexOf(groupId)) {
@@ -225,9 +234,10 @@ public class SteamService implements Runnable {
                             if (sendCount == steamFeedItem.getGroupList().size()) {
                                 log.info(sendName + " ==>完成发送：" + steamFeedItem.getName());
                             } else {
-                                log.error(sendName + " = 发送失败：" + steamFeedItem.getName() + "\n返还消息：" + apiData + "\n消息内容：" + content);
+                                earlyWarningService.warnOnEmail("Steam更新告警-发送失败:" + sendName, failSendList.stream().map(String::valueOf).collect(Collectors.joining("\n")) + "\n消息内容:" + content);
                             }
                         } else {
+                            earlyWarningService.warnOnEmail("Steam更新告警-发送失败", sendName + "\n无法获取到Bot实体！" + "\n消息内容:" + content);
                             log.error(sendName + " = 等待Bot5次失败放弃发送：" + steamFeedItem.getName());
                         }
                     }

@@ -21,6 +21,8 @@ rsshub:
   proxyPort: 10809 #Http代理端口
   errorInfo: false #是否开启RssHub错误提示
   errorInfoCount: 0 #RssHub错误提示阈值; 为0则默认为列表数量
+  branchErrorInfo: false #是否开启RssHub分支错误提示
+  branchErrorInfoCount: 0 #RssHub分支错误提示阈值
   rssList:
     - name: "test"
       url: "https://rss.shab.fun/twitter/user/VOIDInteractive/exclude_replies"
@@ -29,3 +31,4 @@ rsshub:
       translate: false
       proxy: true
       feedProxy: true
+      twitterRTFilter: true #推特转发过滤

@@ -16,6 +16,8 @@ import org.springframework.stereotype.Controller;
 import javax.annotation.Resource;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -48,6 +50,12 @@ public class RssHubController implements Runnable{
 
     int errorCount = 0;
 
+    Map<String, Integer> branchErrorMap = new HashMap<>();
+
+    boolean onWarningFlag = false;//是否已告警过
+
+    boolean isWarnThisPull = false;//本次是否告警
+
     /**
      * 存放执行线程的Array
      */
@@ -59,6 +67,7 @@ public class RssHubController implements Runnable{
     @Override
     public synchronized void run() {
         while (!Thread.currentThread().isInterrupted()) {
+            isWarnThisPull = false;
             clearTempFile();//清空临时文件夹
             log.info("开始抓取RssFeed：" + rsshubFeedConfig.getRssList().stream().map(RssFeedItem::getName).collect(Collectors.toList()));
             threads.clear();//清空线程所在
@@ -76,7 +85,7 @@ public class RssHubController implements Runnable{
                 }
             }
             log.debug("开始等待完成抓取");
-            while (isPullUnFinish()){
+            while (isPullUnFinish()) {
                 //当未抓取完时等待
                 synchronized (this) {
                     this.wait();
@@ -85,6 +94,26 @@ public class RssHubController implements Runnable{
             //完成抓取保存结果
             log.info("完成抓取");
             rsshubMapper.save();
+
+            //告警逻辑
+            if (errorCount >= (rsshubFeedConfig.getErrorInfoCount() <= 0 ? rsshubFeedConfig.getRssList().size() : rsshubFeedConfig.getErrorInfoCount())) {
+                //触发告警
+                isWarnThisPull = true;
+                if (!onWarningFlag) {
+                    onWarningFlag = true;
+                    earlyWarningService.sendEarlyWarning("本轮RssHub抓取已累计错误" + errorCount + "次！");
+                }
+                log.error("RssHub触发告警");
+            } else {
+                //告警恢复
+                if (onWarningFlag) {
+                    earlyWarningService.sendEarlyWarning("RssHub抓取错误已恢复");
+                    log.info("RssHub告警已恢复");
+                }
+                onWarningFlag = false;
+            }
+            this.errorCount = 0;
+
             this.wait();
         }
     }
@@ -138,13 +167,24 @@ public class RssHubController implements Runnable{
     /**
      * 当遇到错误时
      */
-    public void onError() {
+    public void onError(String branchName) {
         synchronized (this) {
-            this.errorCount++;
-            if (errorCount >= (rsshubFeedConfig.getErrorInfoCount() <= 0 ? rsshubFeedConfig.getErrorInfoCount() : rsshubFeedConfig.getRssList().size())) {
-                earlyWarningService.sendEarlyWarning("RssHub抓取已连续错误" + errorCount + "次！");
-                log.error("RssHub触发告警");
-                this.errorCount = 0;
+            //总体告警
+            if (rsshubFeedConfig.isErrorInfo()) {
+                this.errorCount++;
+            }
+            //分支告警
+            if (!rsshubFeedConfig.isBranchErrorInfo()) {
+                return;
+            }
+            if (branchErrorMap.containsKey(branchName)) {
+                int errorCount = branchErrorMap.get(branchName);
+                branchErrorMap.put(branchName, ++errorCount);
+                if (errorCount == rsshubFeedConfig.getBranchErrorInfoCount()) {
+                    earlyWarningService.sendEarlyWarning("RssHub-" + branchName + ":累计抓取错误" + errorCount + "次");
+                }
+            } else {
+                branchErrorMap.put(branchName, 1);
             }
         }
     }
@@ -152,9 +192,16 @@ public class RssHubController implements Runnable{
     /**
      * 当成功时
      */
-    public void onSuccess() {
+    public void onSuccess(String branchName) {
         synchronized (this) {
-            this.errorCount = 0;
+//            this.errorCount = 0;
+            if (branchErrorMap.containsKey(branchName)) {
+                int errrorCount = branchErrorMap.get(branchName);
+                branchErrorMap.remove(branchName);
+                if (errrorCount > rsshubFeedConfig.getBranchErrorInfoCount()) {
+                    earlyWarningService.sendEarlyWarning("RssHub-" + branchName + ":抓取错误已恢复");
+                }
+            }
         }
     }
 }

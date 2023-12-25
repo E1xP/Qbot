@@ -130,6 +130,9 @@ public class SteamBranchPlugin extends CQPlugin {
             cq.sendGroupMsg(event.getGroupId(), CQCodeExtend.reply(event.getMessageId()) + message, false);
             return;
         }
+        List<SteamBranchItem> resultList = result.getSteamBranchItemMap().values().stream()
+                .filter(item -> (item.isPublic() || (item.getTimeStamp() != null && System.currentTimeMillis() - 183 * 24 * 60 * 60 * 1000L < item.getTimeStamp() * 1000L)))
+                .sorted(SteamBranchItem::compareTo).collect(Collectors.toList());
         StringBuilder strBuilder = new StringBuilder();
         strBuilder
                 .append("Steam历史更新结果【")
@@ -138,14 +141,18 @@ public class SteamBranchPlugin extends CQPlugin {
                 .append("共有")
                 .append(result.getSteamBranchItemMap().size())
                 .append("个分支\n")
-                .append("======================\n(仅最近一年活动分支)\n");
+                .append("======================\n(非公开仅最近半年活动分支)\n");
         //构造历史分支结果
-        for (SteamBranchItem resultItem : result.getSteamBranchItemMap().values()) {
-            if (resultItem.getTimeStamp() != null && System.currentTimeMillis() - 365 * 24 * 60 * 60 * 1000L < resultItem.getTimeStamp() * 1000L) {
-                strBuilder.append("- ").append(resultItem.getName()).append(" :\n")
-                        .append("\t版本号：").append(resultItem.getBuildId()).append("\n")
-                        .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeStamp() * 1000))).append("\n");
+        boolean ispublic = false;
+        strBuilder.append("= \uD83D\uDCE2公开分支\n");
+        for (SteamBranchItem resultItem : resultList) {
+            if (ispublic && !resultItem.isPublic()) {
+                strBuilder.append("= \uD83D\uDEE0开发分支\n");
             }
+            strBuilder.append("  - ").append(resultItem.getName()).append(" :\n")
+                    .append("\t版本号：").append(resultItem.getBuildId()).append("\n")
+                    .append("\t更新时间：").append(simpleDateFormat.format(new Date(resultItem.getTimeStamp() * 1000))).append("\n");
+            ispublic = resultItem.isPublic();
         }
         strBuilder.append("======================");
         String str = new String(strBuilder);

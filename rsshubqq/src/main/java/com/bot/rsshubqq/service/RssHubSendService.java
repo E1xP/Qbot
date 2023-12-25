@@ -6,6 +6,7 @@ import com.bot.rsshubqq.pojo.RssFeedItem;
 import com.bot.rsshubqq.pojo.RssItem;
 import com.bot.rsshubqq.utils.BreakOnlyOne;
 import com.bot.utils.CoolQUtils;
+import com.bot.utils.service.EarlyWarningService;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -28,12 +29,15 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 
 /**
@@ -89,6 +93,8 @@ public class RssHubSendService implements Runnable {
 
     final SimpleDateFormat formatter = new SimpleDateFormat("MM月dd日 HH:mm:ss");
 
+    final SimpleDateFormat timeFormatter = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss");
+
     String content;
 
     /**
@@ -99,10 +105,12 @@ public class RssHubSendService implements Runnable {
      * 视频预览图匹配Pattern
      */
     Pattern videoPattern = Pattern.compile("<video.*?poster=\"(.+?)\".*?></video>");
+
     /**
-     * 头部转发匹配Pattern
+     * 预警消息发送
      */
-    Pattern headerPattern = Pattern.compile("(?s)RT (.+?)<br>(.+)|(.+)$");
+    @Resource
+    EarlyWarningService earlyWarningService;
 
     RssHubSendService() {
     }
@@ -113,18 +121,16 @@ public class RssHubSendService implements Runnable {
         content = sendItem.getDescription();
         //去除图片前换行
         content = content.replaceAll("<br>(<video.+?></video>)|<br>(<img.+?>)", "$1$2");
-        Matcher headerMatcher=headerPattern.matcher(content);
         //构建标题头与文字信息
         String toTranslateMessage;
-        if(headerMatcher.find()&&(headerMatcher.group(1)!=null)){//识别是否是转发
-            content ="【"+sendName+"】转发了【"+headerMatcher.group(1)+
+        toTranslateMessage = content;
+        if (sendItem.isRT()) {//识别是否是转发
+            content = "【" + sendName + "】转发了【" + sendItem.getAuthor() +
                     "】的消息!\n----------------------\n内容："
-                    +headerMatcher.group(2)+"\n";
-            toTranslateMessage=headerMatcher.group(2);
+                    + content + "\n";
         }else{
             content ="【"+sendName+"】更新了!\n----------------------\n内容："
-                    +headerMatcher.group(3)+"\n";
-            toTranslateMessage=headerMatcher.group(3);
+                    + content + "\n";
         }
         content = content.replaceAll("<br>","\n");//将换行替换为\n
         //翻译处理
@@ -167,22 +173,24 @@ public class RssHubSendService implements Runnable {
             coolQ = CoolQUtils.getCoolQ();
             if(coolQ==null){
                 sendTryCount++;
-                log.error(sendName+" = 发送获取不到Bot实体，延迟60s后再尝试发送");
-                Thread.sleep(1000*60);
+                log.error(sendName + " = 发送获取不到Bot实体，延迟10s后再尝试发送");
+                Thread.sleep(1000 * 10);
             }
-        }while(coolQ==null&&sendTryCount<5);//仅重试5次
+        } while (coolQ == null && sendTryCount < 3);//仅重试3次
         if(coolQ!=null) {
             log.debug("开始发送消息：" + sendItem.getLink() + "\n群：" + rssFeedItem.getGroups() + "\n内容：" + content);
             int sendCount=0;
             ApiData<MessageData> apiData = null;
+            List<String> failSendList = new ArrayList<>();
             for (long groupId : rssFeedItem.getGroups()) {
                 apiData = coolQ.sendGroupMsg(groupId, content, false);
                 //发送后判断单个消息
                 if(apiData.getStatus().equals("ok")&&apiData.getRetcode()==0){
                     sendCount++;
                     log.debug(sendName+" = 发送群消息："+groupId+"，成功："+apiData);
-                }else{
-                    log.error(sendName + " = 发送群消息：" + groupId + "，失败：" + apiData);
+                }else {
+                    failSendList.add("群：" + groupId + "-" + apiData);
+                    log.error(sendName + "-发送消息至群[" + groupId + "]失败：" + sendItem.getLink() + "\n返还消息：" + apiData);
                 }
                 if(rssFeedItem.getGroups().size()-1!=rssFeedItem.getGroups().indexOf(groupId)) {
                     Thread.sleep(100);
@@ -190,11 +198,12 @@ public class RssHubSendService implements Runnable {
             }
             if(sendCount==rssFeedItem.getGroups().size()) {
                 log.info(sendName + " ==>完成发送：" + sendItem.getLink());
-            }else{
-                log.error(sendName + " = 发送失败：" + sendItem.getLink()+"\n返还消息："+apiData+"\n消息内容："+content);
+            } else {
+                earlyWarningService.warnOnEmail("RssHub告警-发送失败:" + sendName, failSendList.stream().map(String::valueOf).collect(Collectors.joining("\n")) + "\n消息内容:" + content);
             }
         }else{
             log.error(sendName+" = 等待Bot5次失败放弃发送："+sendItem.getLink());
+            earlyWarningService.warnOnEmail("RssHub-告警-Bot获取", sendName + "\n无法获取到Bot实体！\n告警时间" + timeFormatter.format(new Date()) + "\n消息内容:" + content);
         }
     }
 
@@ -293,7 +302,9 @@ public class RssHubSendService implements Runnable {
      * @param mediaUrl 媒体图片URL
      * @param message 消息StringBuilder
      */
-    private void downAndAdd(String mediaUrl,StringBuilder message){
+    @SneakyThrows
+    private void downAndAdd(String mediaUrl, StringBuilder message) {
+        mediaUrl = URLDecoder.decode(mediaUrl, "UTF-8");
         AtomicReference<File> downloadFile = downMedia(mediaUrl);
         if(downloadFile!=null) {
             log.debug(sendName+" = 文件下载到："+downloadFile);
