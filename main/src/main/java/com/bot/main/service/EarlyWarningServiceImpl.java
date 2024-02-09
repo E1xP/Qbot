@@ -77,9 +77,9 @@ public class EarlyWarningServiceImpl implements EarlyWarningService {
      * @param message 告警消息
      */
     @Override
-    public void sendEarlyWarning(String message) {
+    public void sendEarlyWarning(String subject, String message) {
         Date currentDate = new Date();
-        String str = "X预警信息X" +
+        String str = subject +
                 "\n----------------------\n" +
                 message +
                 "\n----------------------\n" +
@@ -92,7 +92,7 @@ public class EarlyWarningServiceImpl implements EarlyWarningService {
             warnOnPrivateMessage(sendMessage);
         }
         if (botConfig.isEarlyWarningEmailEnable()) {
-            warnOnEmail("RssHub-告警信息", sendMessage);
+            warnOnEmail(subject, sendMessage);
         }
     }
 
