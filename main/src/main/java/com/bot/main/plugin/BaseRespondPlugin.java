@@ -227,7 +227,7 @@ public class BaseRespondPlugin extends CQPlugin {
                 cq.sendPrivateMsg(event.getUserId(), "参数错误-非群号", true);
                 return;
             }
-            if (groupId != null) {
+            if (groupId == null) {
                 cq.sendPrivateMsg(event.getUserId(), "未获取到有效群号", true);
                 return;
             }
