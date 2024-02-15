@@ -235,7 +235,7 @@ public class BaseRespondPlugin extends CQPlugin {
                 allowJoinGroupList.add(groupId);
                 cq.sendPrivateMsg(event.getUserId(), "成功允许加入群:" + groupId, true);
             } else {
-                cq.sendPrivateMsg(event.getUserId(), "已经允许过加入群+" + groupId, true);
+                cq.sendPrivateMsg(event.getUserId(), "已经允许过加入群:" + groupId, true);
             }
         }
     }
