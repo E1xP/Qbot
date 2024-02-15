@@ -59,7 +59,7 @@ public class BaseRespondPlugin extends CQPlugin {
     /**
      * 允许加入群列表
      */
-    List<Long> allowJoinGroupList;
+    List<Long> allowJoinGroupList = new ArrayList<>();
 
     /**
      * 用于响应./help指令的内容
