@@ -47,7 +47,7 @@ public class RssItem{
         if (syndEntry.getTitle().startsWith("RT")) {
             isRT = true;
         }
-        if (syndEntry.getTitle().startsWith("RE")) {
+        if (syndEntry.getTitle().startsWith("Re")) {
             isRE = true;
         }
         if (!syndEntry.getModules().isEmpty()) {
