@@ -183,6 +183,7 @@ public class BaseRespondPlugin extends CQPlugin {
         if (botConfig.getAdmins().contains(sender.getUserId())) {
             log.info("响应Echo" + event);
             String message = event.getMessage().substring(event.getMessage().indexOf(" "));
+            message.trim();
             cq.sendGroupMsg(event.getGroupId(), message, false);
         }
     }
