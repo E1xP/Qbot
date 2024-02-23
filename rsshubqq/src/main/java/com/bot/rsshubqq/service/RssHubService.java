@@ -137,6 +137,10 @@ public class RssHubService implements Runnable {
                     //过滤转发
                     continue;
                 }
+                if (rssFeedItem.isTwitterREFilter() && rssItem.isRE()) {
+                    //过滤回复
+                    continue;
+                }
                 rssItems.add(rssItem);
                 if(!isFirstTime) {
                     //非首次抓取

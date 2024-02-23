@@ -34,6 +34,11 @@ public class RssItem{
      */
     @JsonIgnore
     boolean isRT = false;
+    /**
+     * 是否回复
+     */
+    @JsonIgnore
+    boolean isRE = false;
 
     public RssItem(SyndEntry syndEntry){
         this.description=syndEntry.getDescription().getValue();
@@ -41,6 +46,9 @@ public class RssItem{
         this.pubDate=syndEntry.getPublishedDate();
         if (syndEntry.getTitle().startsWith("RT")) {
             isRT = true;
+        }
+        if (syndEntry.getTitle().startsWith("Re")) {
+            isRE = true;
         }
         if (!syndEntry.getModules().isEmpty()) {
             for (Module item : syndEntry.getModules()) {

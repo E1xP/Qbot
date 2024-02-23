@@ -59,7 +59,7 @@ public class BaseRespondPlugin extends CQPlugin {
     /**
      * 允许加入群列表
      */
-    List<Long> allowJoinGroupList;
+    List<Long> allowJoinGroupList = new ArrayList<>();
 
     /**
      * 用于响应./help指令的内容
@@ -107,6 +107,7 @@ public class BaseRespondPlugin extends CQPlugin {
                     break;
                 case "./joingroup"://加入某群
                     onJoinGroupPrivateMessage(cq, event);
+                    break;
                 default:
                     onErrorCommandPrivateMessage(cq, event);
             }
@@ -182,6 +183,7 @@ public class BaseRespondPlugin extends CQPlugin {
         if (botConfig.getAdmins().contains(sender.getUserId())) {
             log.info("响应Echo" + event);
             String message = event.getMessage().substring(event.getMessage().indexOf(" "));
+            message.trim();
             cq.sendGroupMsg(event.getGroupId(), message, false);
         }
     }
@@ -224,8 +226,18 @@ public class BaseRespondPlugin extends CQPlugin {
                 groupId = Long.valueOf(event.getMessage().split(" ")[1]);
             } catch (NumberFormatException e) {
                 cq.sendPrivateMsg(event.getUserId(), "参数错误-非群号", true);
+                return;
             }
-            allowJoinGroupList.add(groupId);
+            if (groupId == null) {
+                cq.sendPrivateMsg(event.getUserId(), "未获取到有效群号", true);
+                return;
+            }
+            if (!allowJoinGroupList.contains(groupId)) {
+                allowJoinGroupList.add(groupId);
+                cq.sendPrivateMsg(event.getUserId(), "成功允许加入群:" + groupId, true);
+            } else {
+                cq.sendPrivateMsg(event.getUserId(), "已经允许过加入群:" + groupId, true);
+            }
         }
     }
 

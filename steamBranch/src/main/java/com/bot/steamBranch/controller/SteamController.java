@@ -122,7 +122,7 @@ public class SteamController implements Runnable {
         synchronized (this) {
             this.errorCount++;
             if (errorCount >= (steamConfig.getErrorInfoCount() <= 0 ? steamConfig.getErrorInfoCount() : steamConfig.getSteamList().size())) {
-                earlyWarningService.sendEarlyWarning("Steam抓取已连续错误" + errorCount + "次！");
+                earlyWarningService.sendEarlyWarning("Steam-抓取错误", "Steam抓取已连续错误" + errorCount + "次！");
                 log.error("Steam触发告警");
                 this.errorCount = 0;
             }

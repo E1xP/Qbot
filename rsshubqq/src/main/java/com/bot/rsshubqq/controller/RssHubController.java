@@ -101,13 +101,13 @@ public class RssHubController implements Runnable{
                 isWarnThisPull = true;
                 if (!onWarningFlag) {
                     onWarningFlag = true;
-                    earlyWarningService.sendEarlyWarning("本轮RssHub抓取已累计错误" + errorCount + "次！");
+                    earlyWarningService.sendEarlyWarning("RssHub-抓取告警", "本轮RssHub抓取已累计错误" + errorCount + "次！");
                 }
                 log.error("RssHub触发告警");
             } else {
                 //告警恢复
                 if (onWarningFlag) {
-                    earlyWarningService.sendEarlyWarning("RssHub抓取错误已恢复");
+                    earlyWarningService.sendEarlyWarning("RssHub-抓取恢复", "RssHub抓取错误已恢复");
                     log.info("RssHub告警已恢复");
                 }
                 onWarningFlag = false;
@@ -181,7 +181,7 @@ public class RssHubController implements Runnable{
                 int errorCount = branchErrorMap.get(branchName);
                 branchErrorMap.put(branchName, ++errorCount);
                 if (errorCount == rsshubFeedConfig.getBranchErrorInfoCount()) {
-                    earlyWarningService.sendEarlyWarning("RssHub-" + branchName + ":累计抓取错误" + errorCount + "次");
+                    earlyWarningService.sendEarlyWarning("RssHub-" + branchName + "抓取错误", "RssHub-" + branchName + ":累计抓取错误" + errorCount + "次");
                 }
             } else {
                 branchErrorMap.put(branchName, 1);
@@ -199,7 +199,7 @@ public class RssHubController implements Runnable{
                 int errrorCount = branchErrorMap.get(branchName);
                 branchErrorMap.remove(branchName);
                 if (errrorCount > rsshubFeedConfig.getBranchErrorInfoCount()) {
-                    earlyWarningService.sendEarlyWarning("RssHub-" + branchName + ":抓取错误已恢复");
+                    earlyWarningService.sendEarlyWarning("RssHub-" + branchName + "抓取恢复", "RssHub-" + branchName + ":抓取错误已恢复");
                 }
             }
         }
