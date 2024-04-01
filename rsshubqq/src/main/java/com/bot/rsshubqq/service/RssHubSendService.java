@@ -159,6 +159,10 @@ public class RssHubSendService implements Runnable {
                 downAndAdd(item,stringBuilder);
             }
             for(String item:imagesUrl){
+                //临时修复RssHub的
+                if (item.endsWith("orig")) {
+                    item = item.replaceAll("orig$", "4096*4096");
+                }
                 downAndAdd(item,stringBuilder);
             }
             content+=stringBuilder;
