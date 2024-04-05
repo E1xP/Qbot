@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -159,10 +158,6 @@ public class RssHubSendService implements Runnable {
                 downAndAdd(item,stringBuilder);
             }
             for(String item:imagesUrl){
-                //临时修复RssHub的导致图片404
-                if (item.endsWith("&amp;name")) {
-                    item = item.replaceAll("&amp;name$", "");
-                }
                 downAndAdd(item,stringBuilder);
             }
             content+=stringBuilder;
@@ -308,7 +303,7 @@ public class RssHubSendService implements Runnable {
      */
     @SneakyThrows
     private void downAndAdd(String mediaUrl, StringBuilder message) {
-        mediaUrl = URLDecoder.decode(mediaUrl, "UTF-8");
+//        mediaUrl = URLDecoder.decode(mediaUrl, "UTF-8");
         AtomicReference<File> downloadFile = downMedia(mediaUrl);
         if(downloadFile!=null) {
             log.debug(sendName+" = 文件下载到："+downloadFile);
