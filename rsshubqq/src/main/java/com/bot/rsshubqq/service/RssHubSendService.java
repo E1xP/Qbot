@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.lz1998.cq.retdata.ApiData;
 import net.lz1998.cq.retdata.MessageData;
 import net.lz1998.cq.robot.CoolQ;
+import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -303,7 +305,8 @@ public class RssHubSendService implements Runnable {
      */
     @SneakyThrows
     private void downAndAdd(String mediaUrl, StringBuilder message) {
-//        mediaUrl = URLDecoder.decode(mediaUrl, "UTF-8");
+        mediaUrl = URLDecoder.decode(mediaUrl, "UTF-8");
+        mediaUrl = StringEscapeUtils.unescapeHtml4(mediaUrl);
         AtomicReference<File> downloadFile = downMedia(mediaUrl);
         if(downloadFile!=null) {
             log.debug(sendName+" = 文件下载到："+downloadFile);
