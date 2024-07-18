@@ -14,7 +14,6 @@ import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
 import lombok.Data;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpMethod;
@@ -79,7 +78,6 @@ public class RssHubService implements Runnable {
     /**
      * 运行线程
      */
-    @SneakyThrows
     @Override
     public void run() {
         RestTemplate restTemplate = new RestTemplate();
@@ -166,7 +164,11 @@ public class RssHubService implements Runnable {
                     thread.start();
                     if (sendList.size() - 1 != sendList.indexOf(item)) {
                         //非最后一个
-                        Thread.sleep(500);
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            log.error(rssFeedItem.getName() + " = ", e);
+                        }
                     }
                 }
             }
