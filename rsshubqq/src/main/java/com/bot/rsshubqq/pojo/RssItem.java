@@ -41,7 +41,7 @@ public class RssItem{
     boolean isRE = false;
 
     public RssItem(SyndEntry syndEntry){
-        this.description = syndEntry.getTitle() + syndEntry.getDescription().getValue();
+        this.description = syndEntry.getTitle() + (syndEntry.getDescription() != null ? syndEntry.getDescription().getValue() : "");
         this.link = syndEntry.getLink().replaceAll("nitter\\.([\\S]+\\.)+[\\S]+?\\/", "twitter.com/");
         this.pubDate=syndEntry.getPublishedDate();
         if (this.pubDate == null) {
