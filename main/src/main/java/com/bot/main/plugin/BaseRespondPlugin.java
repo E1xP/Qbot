@@ -96,6 +96,9 @@ public class BaseRespondPlugin extends CQPlugin {
         if (botConfig.getAdmins().contains(sender.getUserId())) {
             String comToken = event.getMessage().trim().toLowerCase(Locale.ROOT).split(" ")[0];
             switch (comToken) {
+                case "./getpublicip"://发送当前公网ip
+                    onGetPublicIpMessage(cq, event);
+                    break;
                 case "./status"://发送QQBot状态
                     onStatusPrivateMessage(cq, event);
                     break;
@@ -276,6 +279,19 @@ public class BaseRespondPlugin extends CQPlugin {
         CQUser sender = event.getSender();
         log.info("响应状态：" + event);
         String message = botService.getBotStatus(cq);
+        cq.sendPrivateMsg(sender.getUserId(), message, false);
+    }
+
+    /**
+     * 接受到私聊-获取当前公网ip
+     *
+     * @param cq    cqBot实体类
+     * @param event 私聊消息事件
+     */
+    private void onGetPublicIpMessage(CoolQ cq, CQPrivateMessageEvent event) {
+        CQUser sender = event.getSender();
+        log.info("响应状态：" + event);
+        String message = botService.getPublicIp();
         cq.sendPrivateMsg(sender.getUserId(), message, false);
     }
 
