@@ -117,7 +117,7 @@ public class SteamService implements Runnable {
             }
             String result = stringBuilder.substring(strStart, strEnd + 1).replaceAll("\t", "").replaceAll(":", "：");
             //分离branchesjson
-            Pattern branchPattern = Pattern.compile("\\\"branches\\\"[\\s\\{]*?(\\\"[\\s\\S]*?\\\")[\\s\\}]*?\\\"ufs\\\"");
+            Pattern branchPattern = Pattern.compile("\\\"branches\\\"[\\s\\{]*?(\\\"[\\s\\S]*?\\\")[\\s\\}]*?(\\\"ufs\\\"|\\}\\Z)");
             Matcher branchMatcher = branchPattern.matcher(result);
             branchMatcher.find();
             String branchesStr = "{" + branchMatcher.group(1) + "}}";
