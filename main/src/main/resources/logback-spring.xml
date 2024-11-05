@@ -26,7 +26,7 @@ configuration 子节点为 appender、logger、root
     </appender>
 
     <!--滚动文件-->
-    <appender name="loginfo" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="logInfo" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_HOME}/logInfo/log.log</file>
         <!-- ThresholdFilter:临界值过滤器，过滤掉 TRACE 和 DEBUG 级别的日志 -->
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
