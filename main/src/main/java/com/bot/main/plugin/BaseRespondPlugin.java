@@ -95,24 +95,26 @@ public class BaseRespondPlugin extends CQPlugin {
         CQUser sender = event.getSender();
         if (botConfig.getAdmins().contains(sender.getUserId())) {
             String comToken = event.getMessage().trim().toLowerCase(Locale.ROOT).split(" ")[0];
-            switch (comToken) {
-                case "./getpublicip"://发送当前公网ip
-                    onGetPublicIpMessage(cq, event);
-                    break;
-                case "./status"://发送QQBot状态
-                    onStatusPrivateMessage(cq, event);
-                    break;
-                case "./ping"://发送ping消息
-                    onPingPrivateMessage(cq, event);
-                    break;
-                case "./send"://发送群消息
-                    onSendPrivateMessage(cq, event);
-                    break;
-                case "./joingroup"://加入某群
-                    onJoinGroupPrivateMessage(cq, event);
-                    break;
-                default:
-                    onErrorCommandPrivateMessage(cq, event);
+            if (event.getMessage().trim().toLowerCase(Locale.ROOT).startsWith("./")) {
+                switch (comToken) {
+                    case "./getpublicip"://发送当前公网ip
+                        onGetPublicIpMessage(cq, event);
+                        break;
+                    case "./status"://发送QQBot状态
+                        onStatusPrivateMessage(cq, event);
+                        break;
+                    case "./ping"://发送ping消息
+                        onPingPrivateMessage(cq, event);
+                        break;
+                    case "./send"://发送群消息
+                        onSendPrivateMessage(cq, event);
+                        break;
+                    case "./joingroup"://加入某群
+                        onJoinGroupPrivateMessage(cq, event);
+                        break;
+                    default:
+                        onErrorCommandPrivateMessage(cq, event);
+                }
             }
             return MESSAGE_BLOCK;
         }
@@ -186,7 +188,7 @@ public class BaseRespondPlugin extends CQPlugin {
         if (botConfig.getAdmins().contains(sender.getUserId())) {
             log.info("响应Echo" + event);
             String message = event.getMessage().substring(event.getMessage().indexOf(" "));
-            message.trim();
+            message = message.trim();
             cq.sendGroupMsg(event.getGroupId(), message, false);
         }
     }
