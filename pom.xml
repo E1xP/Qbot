@@ -14,6 +14,7 @@
         <module>utils</module>
         <module>steamBranch</module>
         <module>logService</module>
+        <module>spring-cq</module>
     </modules>
 
     <properties>
@@ -60,12 +61,6 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-        </dependency>
-        <!--Spring-CQ-->
-        <dependency>
-            <groupId>net.lz1998</groupId>
-            <artifactId>spring-cq</artifactId>
-            <version>4.15.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -1,5 +1,8 @@
 package com.bot.rsshubqq.service;
 
+import com.bot.retdata.ApiData;
+import com.bot.retdata.MessageData;
+import com.bot.robot.CoolQ;
 import com.bot.rsshubqq.config.RsshubConfig;
 import com.bot.rsshubqq.config.TranslateConfig;
 import com.bot.rsshubqq.pojo.RssFeedItem;
@@ -10,9 +13,6 @@ import com.bot.utils.service.EarlyWarningService;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.lz1998.cq.retdata.ApiData;
-import net.lz1998.cq.retdata.MessageData;
-import net.lz1998.cq.robot.CoolQ;
 import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpMethod;

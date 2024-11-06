@@ -1,18 +1,18 @@
 package com.bot.logService.plugin;
 
+import com.bot.entity.CQFile;
+import com.bot.entity.CQUser;
+import com.bot.event.message.CQGroupMessageEvent;
+import com.bot.event.message.CQPrivateMessageEvent;
+import com.bot.event.notice.*;
+import com.bot.event.request.CQFriendRequestEvent;
+import com.bot.event.request.CQGroupRequestEvent;
+import com.bot.retdata.GroupInfoData;
+import com.bot.retdata.GroupMemberInfoData;
+import com.bot.retdata.LoginInfoData;
+import com.bot.robot.CQPlugin;
+import com.bot.robot.CoolQ;
 import lombok.extern.slf4j.Slf4j;
-import net.lz1998.cq.entity.CQFile;
-import net.lz1998.cq.entity.CQUser;
-import net.lz1998.cq.event.message.CQGroupMessageEvent;
-import net.lz1998.cq.event.message.CQPrivateMessageEvent;
-import net.lz1998.cq.event.notice.*;
-import net.lz1998.cq.event.request.CQFriendRequestEvent;
-import net.lz1998.cq.event.request.CQGroupRequestEvent;
-import net.lz1998.cq.retdata.GroupInfoData;
-import net.lz1998.cq.retdata.GroupMemberInfoData;
-import net.lz1998.cq.retdata.LoginInfoData;
-import net.lz1998.cq.robot.CQPlugin;
-import net.lz1998.cq.robot.CoolQ;
 import org.springframework.stereotype.Component;
 
 /**
@@ -26,6 +26,36 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class LogPlugin extends CQPlugin {
+
+    @Override
+    public int onPrivateMessageSent(CoolQ cq, CQPrivateMessageEvent event) {
+        StringBuilder info = new StringBuilder();
+        info.append(getBotInfo(cq));
+        info.append("发送 -> 私聊消息 ");
+        //发送者
+        CQUser sender = event.getSender();
+        info.append("[").append(sender.getNickname()).append("(").append(sender.getUserId()).append(")]: ");
+        //消息内容
+        info.append(event.getMessage());
+        info.append(" (").append(event.getMessageId()).append(")");
+        log.info(info.toString());
+        return MESSAGE_IGNORE;
+    }
+
+    @Override
+    public int onGroupMessageSent(CoolQ cq, CQGroupMessageEvent event) {
+        StringBuilder info = new StringBuilder();
+        info.append(getBotInfo(cq));
+        info.append("发送 -> 群聊消息 ");
+        //群名称
+        long groupId = event.getGroupId();
+        info.append(getGroupName(cq, groupId)).append(":");
+        //消息内容
+        info.append(event.getMessage());
+        info.append(" (").append(event.getMessageId()).append(")");
+        log.info(info.toString());
+        return MESSAGE_IGNORE;
+    }
 
     /**
      * 收到私聊消息

@@ -1,7 +1,7 @@
 package com.bot.main.service;
 
+import com.bot.robot.CoolQ;
 import com.bot.utils.Time;
-import net.lz1998.cq.robot.CoolQ;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;

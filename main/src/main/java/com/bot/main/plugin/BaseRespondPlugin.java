@@ -1,18 +1,18 @@
 package com.bot.main.plugin;
 
+import com.bot.entity.CQUser;
+import com.bot.event.message.CQGroupMessageEvent;
+import com.bot.event.message.CQPrivateMessageEvent;
+import com.bot.event.request.CQGroupRequestEvent;
 import com.bot.main.config.BotConfig;
 import com.bot.main.config.PingConfig;
 import com.bot.main.service.BotService;
+import com.bot.retdata.GroupData;
+import com.bot.robot.CQPlugin;
+import com.bot.robot.CoolQ;
+import com.bot.utils.CQCode;
 import com.bot.utils.CQCodeExtend;
 import lombok.extern.slf4j.Slf4j;
-import net.lz1998.cq.entity.CQUser;
-import net.lz1998.cq.event.message.CQGroupMessageEvent;
-import net.lz1998.cq.event.message.CQPrivateMessageEvent;
-import net.lz1998.cq.event.request.CQGroupRequestEvent;
-import net.lz1998.cq.retdata.GroupData;
-import net.lz1998.cq.robot.CQPlugin;
-import net.lz1998.cq.robot.CoolQ;
-import net.lz1998.cq.utils.CQCode;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;

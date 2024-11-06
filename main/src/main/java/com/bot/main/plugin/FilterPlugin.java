@@ -1,11 +1,11 @@
 package com.bot.main.plugin;
 
+import com.bot.event.message.CQGroupMessageEvent;
+import com.bot.event.message.CQPrivateMessageEvent;
 import com.bot.main.config.BotConfig;
+import com.bot.robot.CQPlugin;
+import com.bot.robot.CoolQ;
 import lombok.extern.slf4j.Slf4j;
-import net.lz1998.cq.event.message.CQGroupMessageEvent;
-import net.lz1998.cq.event.message.CQPrivateMessageEvent;
-import net.lz1998.cq.robot.CQPlugin;
-import net.lz1998.cq.robot.CoolQ;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 

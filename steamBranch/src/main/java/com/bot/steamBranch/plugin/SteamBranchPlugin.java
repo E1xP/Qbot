@@ -1,5 +1,8 @@
 package com.bot.steamBranch.plugin;
 
+import com.bot.event.message.CQGroupMessageEvent;
+import com.bot.robot.CQPlugin;
+import com.bot.robot.CoolQ;
 import com.bot.steamBranch.config.SteamConfig;
 import com.bot.steamBranch.mapper.SteamMapper;
 import com.bot.steamBranch.pojo.SteamBranchItem;
@@ -7,9 +10,6 @@ import com.bot.steamBranch.pojo.SteamFeedItem;
 import com.bot.steamBranch.pojo.SteamResult;
 import com.bot.utils.CQCodeExtend;
 import lombok.extern.slf4j.Slf4j;
-import net.lz1998.cq.event.message.CQGroupMessageEvent;
-import net.lz1998.cq.robot.CQPlugin;
-import net.lz1998.cq.robot.CoolQ;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 

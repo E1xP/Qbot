@@ -1,7 +1,5 @@
 package com.bot.utils;
 
-import net.lz1998.cq.utils.CQCode;
-
 /**
  * @author E1xP@foxmail.com
  * @version 1.0
