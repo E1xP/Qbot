@@ -184,6 +184,10 @@ public class SteamService implements Runnable {
                                 }
                             }
                         }
+                        //新增分支提醒
+                        if (!oldResult.getSteamBranchItemMap().containsKey(branchName)) {
+
+                        }
                     }
                     oldResult.setNewResult(gameName, branches);
                     this.onSuccess();

@@ -37,7 +37,7 @@ public class LogPlugin extends CQPlugin {
     public int onPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
         StringBuilder info = new StringBuilder();
         info.append(getBotInfo(cq));
-        info.append("收到 <- 私聊 ");
+        info.append("收到 <- 私聊消息 ");
         //发送者
         CQUser sender = event.getSender();
         info.append("[").append(sender.getNickname()).append("(").append(sender.getUserId()).append(")]: ");
@@ -58,7 +58,7 @@ public class LogPlugin extends CQPlugin {
     public int onGroupMessage(CoolQ cq, CQGroupMessageEvent event) {
         StringBuilder info = new StringBuilder();
         info.append(getBotInfo(cq));
-        info.append("收到 <- 群聊 ");
+        info.append("收到 <- 群聊消息 ");
         //群名称
         long groupId = event.getGroupId();
         info.append(getGroupName(cq, groupId));
@@ -82,7 +82,7 @@ public class LogPlugin extends CQPlugin {
     public int onGroupUploadNotice(CoolQ cq, CQGroupUploadNoticeEvent event) {
         StringBuilder info = new StringBuilder();
         info.append(getBotInfo(cq));
-        info.append("收到 <- 群聊文件 ");
+        info.append("发现 <- 群聊文件 ");
         //群名称
         long groupId = event.getGroupId();
         info.append(getGroupName(cq, groupId));
@@ -107,7 +107,7 @@ public class LogPlugin extends CQPlugin {
     public int onGroupAdminNotice(CoolQ cq, CQGroupAdminNoticeEvent event) {
         StringBuilder info = new StringBuilder();
         info.append(getBotInfo(cq));
-        info.append("收到 <- 群管理员变动 ");
+        info.append("发现 <- 群管理员变动 ");
         //群名称
         long groupId = event.getGroupId();
         info.append(getGroupName(cq, groupId));
@@ -137,7 +137,7 @@ public class LogPlugin extends CQPlugin {
     public int onGroupDecreaseNotice(CoolQ cq, CQGroupDecreaseNoticeEvent event) {
         StringBuilder info = new StringBuilder();
         info.append(getBotInfo(cq));
-        info.append("收到 <- 退群 ");
+        info.append("收到 <- 退群: ");
         //群名称
         long groupId = event.getGroupId();
         info.append(getGroupName(cq, groupId));
@@ -175,7 +175,7 @@ public class LogPlugin extends CQPlugin {
     public int onGroupIncreaseNotice(CoolQ cq, CQGroupIncreaseNoticeEvent event) {
         StringBuilder info = new StringBuilder();
         info.append(getBotInfo(cq));
-        info.append("收到 <- 加群 ");
+        info.append("收到 <- 加群: ");
         //群名称
         long groupId = event.getGroupId();
         info.append(getGroupName(cq, groupId));
@@ -208,7 +208,7 @@ public class LogPlugin extends CQPlugin {
     public int onGroupBanNotice(CoolQ cq, CQGroupBanNoticeEvent event) {
         StringBuilder info = new StringBuilder();
         info.append(getBotInfo(cq));
-        info.append("收到 <- 群禁言 ");
+        info.append("发现 <- 群禁言: ");
         //群名称
         long groupId = event.getGroupId();
         info.append(getGroupName(cq, groupId));
@@ -242,7 +242,7 @@ public class LogPlugin extends CQPlugin {
                 break;
             }
             default:
-                info.append("未知类型[").append(subType).append("]: ");
+                info.append("未知类型[").append(subType).append("] ");
         }
 
         log.info(info.toString());
@@ -252,9 +252,9 @@ public class LogPlugin extends CQPlugin {
     @Override
     public int onFriendAddNotice(CoolQ cq, CQFriendAddNoticeEvent event) {
         String info = getBotInfo(cq) +
-                "收到 <- 成为好友：" +
+                "发现 <- 好友增加：[" +
                 //消息内容
-                event.getUserId();
+                event.getUserId() + "]";
         log.info(info);
         return MESSAGE_IGNORE;
     }
@@ -262,9 +262,9 @@ public class LogPlugin extends CQPlugin {
     @Override
     public int onFriendRequest(CoolQ cq, CQFriendRequestEvent event) {
         String info = getBotInfo(cq) +
-                "收到 <- 请求添加好友：" +
+                "收到 <- 添加好友：[" +
                 //消息内容
-                event.getUserId();
+                event.getUserId() + "]";
         log.info(info);
         return MESSAGE_IGNORE;
     }
@@ -306,7 +306,7 @@ public class LogPlugin extends CQPlugin {
      */
     private String getBotInfo(CoolQ cq) {
         LoginInfoData data = cq.getLoginInfo().getData();
-        return data.getNickname() + "(" + data.getUser_id() + ") | ";
+        return "[" + data.getNickname() + "(" + data.getUser_id() + ")] | ";
     }
 
     /**
@@ -331,7 +331,7 @@ public class LogPlugin extends CQPlugin {
      */
     private String getGroupName(CoolQ cq, long groupId) {
         GroupInfoData group = cq.getGroupInfo(groupId, false).getData();
-        return "[" + group.getGroupName() + "(" + groupId + ")] ";
+        return "[" + group.getGroupName() + "(" + groupId + ")]-";
     }
 
     /**
@@ -341,12 +341,15 @@ public class LogPlugin extends CQPlugin {
      * @return
      */
     private String getFormateTime(long duration) {
-        long day = duration / (60 * 24);
+        long day = duration / (60 * 60 * 24);
+        duration = duration % (60 * 60 * 24);
+        long hour = duration / (60 * 24);
         duration = duration % (60 * 24);
-        long hour = duration / 24;
-        duration = duration % 24;
+        long minute = duration / 60;
+        duration = duration % 60;
         return (day == 0 ? "" : day + "天") +
                 (hour == 0 ? "" : hour + "小时") +
+                (minute == 0 ? "" : minute + "分钟") +
                 (duration == 0 ? "" : duration + "秒 ");
     }
 }
