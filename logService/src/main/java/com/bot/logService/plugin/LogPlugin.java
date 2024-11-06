@@ -10,6 +10,7 @@ import com.bot.event.request.CQGroupRequestEvent;
 import com.bot.retdata.GroupInfoData;
 import com.bot.retdata.GroupMemberInfoData;
 import com.bot.retdata.LoginInfoData;
+import com.bot.retdata.StrangerInfoData;
 import com.bot.robot.CQPlugin;
 import com.bot.robot.CoolQ;
 import lombok.extern.slf4j.Slf4j;
@@ -33,8 +34,9 @@ public class LogPlugin extends CQPlugin {
         info.append(getBotInfo(cq));
         info.append("发送 -> 私聊消息 ");
         //发送者
-        CQUser sender = event.getSender();
-        info.append("[").append(sender.getNickname()).append("(").append(sender.getUserId()).append(")]: ");
+        long userId = event.getUserId();
+        StrangerInfoData receiver = cq.getStrangerInfo(userId, false).getData();
+        info.append("[").append(receiver.getNickname()).append("(").append(receiver.getUserId()).append(")]: ");
         //消息内容
         info.append(event.getMessage());
         info.append(" (").append(event.getMessageId()).append(")");
@@ -49,7 +51,7 @@ public class LogPlugin extends CQPlugin {
         info.append("发送 -> 群聊消息 ");
         //群名称
         long groupId = event.getGroupId();
-        info.append(getGroupName(cq, groupId)).append(":");
+        info.append(getGroupName(cq, groupId).replace("-", "")).append(":");
         //消息内容
         info.append(event.getMessage());
         info.append(" (").append(event.getMessageId()).append(")");
