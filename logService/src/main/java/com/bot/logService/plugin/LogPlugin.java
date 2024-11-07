@@ -34,7 +34,7 @@ public class LogPlugin extends CQPlugin {
         info.append(getBotInfo(cq));
         info.append("发送 -> 私聊消息 ");
         //发送者
-        long userId = event.getUserId();
+        long userId = event.getTargetId();
         StrangerInfoData receiver = cq.getStrangerInfo(userId, false).getData();
         info.append("[").append(receiver.getNickname()).append("(").append(receiver.getUserId()).append(")]: ");
         //消息内容

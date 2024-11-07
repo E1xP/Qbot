@@ -23,4 +23,9 @@ public class CQPrivateMessageEvent extends CQMessageEvent {
      */
     @JSONField(name = "sender")
     private CQUser sender;
+    /**
+     * 接收人id
+     */
+    @JSONField(name = "target_id")
+    private long targetId;
 }
