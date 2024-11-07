@@ -16,6 +16,8 @@ import com.bot.robot.CoolQ;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.net.URLDecoder;
+
 /**
  * @author E1xP@foxmail.com
  * @version 1.0
@@ -38,7 +40,7 @@ public class LogPlugin extends CQPlugin {
         StrangerInfoData receiver = cq.getStrangerInfo(userId, false).getData();
         info.append("[").append(receiver.getNickname()).append("(").append(receiver.getUserId()).append(")]: ");
         //消息内容
-        info.append(event.getMessage());
+        info.append(URLDecoder.decode(event.getMessage()));
         info.append(" (").append(event.getMessageId()).append(")");
         log.info(info.toString());
         return MESSAGE_IGNORE;
@@ -53,7 +55,7 @@ public class LogPlugin extends CQPlugin {
         long groupId = event.getGroupId();
         info.append(getGroupName(cq, groupId).replace("-", "")).append(":");
         //消息内容
-        info.append(event.getMessage());
+        info.append(URLDecoder.decode(event.getMessage()));
         info.append(" (").append(event.getMessageId()).append(")");
         log.info(info.toString());
         return MESSAGE_IGNORE;
@@ -74,7 +76,7 @@ public class LogPlugin extends CQPlugin {
         CQUser sender = event.getSender();
         info.append("[").append(sender.getNickname()).append("(").append(sender.getUserId()).append(")]: ");
         //消息内容
-        info.append(event.getMessage());
+        info.append(URLDecoder.decode(event.getMessage()));
         info.append(" (").append(event.getMessageId()).append(")");
         log.info(info.toString());
         return MESSAGE_IGNORE;
@@ -98,7 +100,7 @@ public class LogPlugin extends CQPlugin {
         CQUser sender = event.getSender();
         info.append("[").append(sender.getNickname()).append("(").append(sender.getUserId()).append(")]: ");
         //消息内容
-        info.append(event.getMessage());
+        info.append(URLDecoder.decode(event.getMessage()));
         info.append(" (").append(event.getMessageId()).append(")");
         log.info(info.toString());
         return MESSAGE_IGNORE;
