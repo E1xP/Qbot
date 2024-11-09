@@ -706,4 +706,22 @@ public class CoolQ {
         ApiRawData result = apiHandler.sendApiMessage(botSession, action, null).toJavaObject(ApiRawData.class);
         return result;
     }
+
+    /**
+     * 获取群消息
+     *
+     * @param messageId 消息Id
+     * @return 结果
+     */
+    public ApiData<MessageDataGot> getMessage(long messageId) {
+
+        ApiEnum action = ApiEnum.GET_MSG;
+
+        JSONObject params = new JSONObject();
+        params.put("message_id", messageId);
+
+        ApiData<MessageDataGot> result = apiHandler.sendApiMessage(botSession, action, params).toJavaObject(new TypeReference<ApiData<MessageDataGot>>() {
+        });
+        return result;
+    }
 }
