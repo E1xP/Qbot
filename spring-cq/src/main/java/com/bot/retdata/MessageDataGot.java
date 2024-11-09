@@ -9,7 +9,7 @@ import lombok.EqualsAndHashCode;
  * @author E1xP@foxmail.com
  * @version 1.0
  * @PACKAGE_NAME com.bot.retdata
- * @CLASS_NAME MessageDataGetted
+ * @CLASS_NAME MessageDataGot
  * @Description TODO 获取消息的返回值
  * @Date 2024/11/7 0007 下午 11:37
  **/
