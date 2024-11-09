@@ -28,11 +28,6 @@ public class MessageDataGot extends MessageData {
     @JSONField(name = "group_id")
     private long groupId;
     /**
-     * 消息id
-     */
-    @JSONField(name = "message_id")
-    private long messageId;
-    /**
      * 消息真实id
      */
     @JSONField(name = "real_id")
