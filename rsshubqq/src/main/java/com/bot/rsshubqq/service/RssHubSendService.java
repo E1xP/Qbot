@@ -194,7 +194,7 @@ public class RssHubSendService implements Runnable {
                     log.error(sendName + "-发送消息至群[" + groupId + "]失败：" + sendItem.getLink() + "\n返还消息：" + apiData);
                 }
                 if(rssFeedItem.getGroups().size()-1!=rssFeedItem.getGroups().indexOf(groupId)) {
-                    Thread.sleep(100);
+                    Thread.sleep(500);
                 }
             }
             if(sendCount==rssFeedItem.getGroups().size()) {
