@@ -1,5 +1,8 @@
 package com.bot.steamBranch.service;
 
+import com.bot.retdata.ApiData;
+import com.bot.retdata.MessageData;
+import com.bot.robot.CoolQ;
 import com.bot.steamBranch.config.SteamConfig;
 import com.bot.steamBranch.controller.SteamController;
 import com.bot.steamBranch.mapper.SteamMapper;
@@ -15,9 +18,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import net.lz1998.cq.retdata.ApiData;
-import net.lz1998.cq.retdata.MessageData;
-import net.lz1998.cq.robot.CoolQ;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -184,6 +184,10 @@ public class SteamService implements Runnable {
                                 }
                             }
                         }
+                        //新增分支提醒
+//                        if (!oldResult.getSteamBranchItemMap().containsKey(branchName)) {
+//
+//                        }
                     }
                     oldResult.setNewResult(gameName, branches);
                     this.onSuccess();

@@ -1,7 +1,7 @@
 package com.bot.utils;
 
-import net.lz1998.cq.CQGlobal;
-import net.lz1998.cq.robot.CoolQ;
+import com.bot.CQGlobal;
+import com.bot.robot.CoolQ;
 
 /**
  * @author E1xP@foxmail.com

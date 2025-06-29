@@ -1,18 +1,18 @@
 package com.bot.main.plugin;
 
+import com.bot.entity.CQUser;
+import com.bot.event.message.CQGroupMessageEvent;
+import com.bot.event.message.CQPrivateMessageEvent;
+import com.bot.event.request.CQGroupRequestEvent;
 import com.bot.main.config.BotConfig;
 import com.bot.main.config.PingConfig;
 import com.bot.main.service.BotService;
+import com.bot.retdata.GroupData;
+import com.bot.robot.CQPlugin;
+import com.bot.robot.CoolQ;
+import com.bot.utils.CQCode;
 import com.bot.utils.CQCodeExtend;
 import lombok.extern.slf4j.Slf4j;
-import net.lz1998.cq.entity.CQUser;
-import net.lz1998.cq.event.message.CQGroupMessageEvent;
-import net.lz1998.cq.event.message.CQPrivateMessageEvent;
-import net.lz1998.cq.event.request.CQGroupRequestEvent;
-import net.lz1998.cq.retdata.GroupData;
-import net.lz1998.cq.robot.CQPlugin;
-import net.lz1998.cq.robot.CoolQ;
-import net.lz1998.cq.utils.CQCode;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -95,24 +95,26 @@ public class BaseRespondPlugin extends CQPlugin {
         CQUser sender = event.getSender();
         if (botConfig.getAdmins().contains(sender.getUserId())) {
             String comToken = event.getMessage().trim().toLowerCase(Locale.ROOT).split(" ")[0];
-            switch (comToken) {
-                case "./getpublicip"://发送当前公网ip
-                    onGetPublicIpMessage(cq, event);
-                    break;
-                case "./status"://发送QQBot状态
-                    onStatusPrivateMessage(cq, event);
-                    break;
-                case "./ping"://发送ping消息
-                    onPingPrivateMessage(cq, event);
-                    break;
-                case "./send"://发送群消息
-                    onSendPrivateMessage(cq, event);
-                    break;
-                case "./joingroup"://加入某群
-                    onJoinGroupPrivateMessage(cq, event);
-                    break;
-                default:
-                    onErrorCommandPrivateMessage(cq, event);
+            if (event.getMessage().trim().toLowerCase(Locale.ROOT).startsWith("./")) {
+                switch (comToken) {
+                    case "./getpublicip"://发送当前公网ip
+                        onGetPublicIpMessage(cq, event);
+                        break;
+                    case "./status"://发送QQBot状态
+                        onStatusPrivateMessage(cq, event);
+                        break;
+                    case "./ping"://发送ping消息
+                        onPingPrivateMessage(cq, event);
+                        break;
+                    case "./send"://发送群消息
+                        onSendPrivateMessage(cq, event);
+                        break;
+                    case "./joingroup"://加入某群
+                        onJoinGroupPrivateMessage(cq, event);
+                        break;
+                    default:
+                        onErrorCommandPrivateMessage(cq, event);
+                }
             }
             return MESSAGE_BLOCK;
         }
@@ -186,7 +188,7 @@ public class BaseRespondPlugin extends CQPlugin {
         if (botConfig.getAdmins().contains(sender.getUserId())) {
             log.info("响应Echo" + event);
             String message = event.getMessage().substring(event.getMessage().indexOf(" "));
-            message.trim();
+            message = message.trim();
             cq.sendGroupMsg(event.getGroupId(), message, false);
         }
     }

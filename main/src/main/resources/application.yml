@@ -5,6 +5,7 @@ spring:
       - steamBranch
   cq:
     plugin-list: #插件列表
+      - com.bot.logService.plugin.LogPlugin
       - com.bot.main.plugin.FilterPlugin
       - com.bot.rsshubqq.plugin.RssHubPlugin
       - com.bot.steamBranch.plugin.SteamBranchPlugin

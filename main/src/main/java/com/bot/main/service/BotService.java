@@ -1,7 +1,8 @@
 package com.bot.main.service;
 
+import com.bot.retdata.VersionInfoData;
+import com.bot.robot.CoolQ;
 import com.bot.utils.Time;
-import net.lz1998.cq.robot.CoolQ;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -30,8 +31,9 @@ public class BotService {
      * @return 运行状态文本
      */
     public String getBotStatus(CoolQ cq) {
+        VersionInfoData versionInfoData = cq.getVersionInfo().getData();
         return "当前登录账号：" + cq.getLoginInfo().getData().getUser_id() + "\n" +
-                "当前HTTP API插件情况：" + (cq.getStatus().getData().isAppGood() ? "正常" : "异常") + "\n" +
+                "客户端：" + versionInfoData.getAppName() + " " + versionInfoData.getVersion() + "\n" +
                 "当前时间：" + Time.getCurrentTime();
     }
 

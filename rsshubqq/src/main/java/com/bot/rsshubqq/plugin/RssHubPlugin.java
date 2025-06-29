@@ -1,9 +1,9 @@
 package com.bot.rsshubqq.plugin;
 
-import net.lz1998.cq.event.message.CQGroupMessageEvent;
-import net.lz1998.cq.event.message.CQPrivateMessageEvent;
-import net.lz1998.cq.robot.CQPlugin;
-import net.lz1998.cq.robot.CoolQ;
+import com.bot.event.message.CQGroupMessageEvent;
+import com.bot.event.message.CQPrivateMessageEvent;
+import com.bot.robot.CQPlugin;
+import com.bot.robot.CoolQ;
 import org.springframework.stereotype.Component;
 
 

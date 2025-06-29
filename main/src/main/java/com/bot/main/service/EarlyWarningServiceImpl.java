@@ -1,11 +1,11 @@
 package com.bot.main.service;
 
 import com.bot.main.config.BotConfig;
+import com.bot.robot.CoolQ;
 import com.bot.utils.CoolQUtils;
 import com.bot.utils.service.EarlyWarningService;
 import com.bot.utils.service.EmailService;
 import lombok.extern.slf4j.Slf4j;
-import net.lz1998.cq.robot.CoolQ;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
