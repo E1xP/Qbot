@@ -41,17 +41,11 @@ public class RssItem{
     boolean isRE = false;
 
     public RssItem(SyndEntry syndEntry){
-        this.description = syndEntry.getTitle() + (syndEntry.getDescription() != null ? syndEntry.getDescription().getValue() : "");
+        this.description = (syndEntry.getDescription() != null ? syndEntry.getDescription().getValue() : syndEntry.getTitle());
         this.link = syndEntry.getLink().replaceAll("nitter\\.([\\S]+\\.)+[\\S]+?\\/", "twitter.com/");
         this.pubDate=syndEntry.getPublishedDate();
         if (this.pubDate == null) {
             this.pubDate = syndEntry.getUpdatedDate();
-        }
-        if (syndEntry.getTitle().startsWith("RT")) {
-            isRT = true;
-        }
-        if (syndEntry.getTitle().startsWith("Re")) {
-            isRE = true;
         }
         if (!syndEntry.getModules().isEmpty()) {
             for (Module item : syndEntry.getModules()) {
@@ -59,6 +53,18 @@ public class RssItem{
                     author = ((DCModuleImpl) item).getCreator();
                 }
             }
+        }
+        if (syndEntry.getTitle().startsWith("RT")) {
+            isRT = true;
+            String title = syndEntry.getTitle();
+            int index = title.indexOf(":");
+            if (-1 < index) {
+                author = title.substring(3, index).trim();
+                this.description = this.description.substring(index + 1).trim();
+            }
+        }
+        if (syndEntry.getTitle().startsWith("Re")) {
+            isRE = true;
         }
     }
 
