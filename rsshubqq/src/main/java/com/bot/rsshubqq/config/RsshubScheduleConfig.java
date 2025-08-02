@@ -11,8 +11,8 @@ import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,10 +35,10 @@ public class RsshubScheduleConfig implements SchedulingConfigurer {
     RssHubController rssHubController;
 
     // 用于存储每个Feed正在运行的服务实例
-    private final Map<String, RssHubService> runningServices = new HashMap<>();
+    private final Map<String, RssHubService> runningServices = new ConcurrentHashMap<>();
 
     // 用于存储每个Feed正在运行的线程
-    private final Map<String, Thread> runningThreads = new HashMap<>();
+    private final Map<String, Thread> runningThreads = new ConcurrentHashMap<>();
 
     /**
      * 配置RssHub的定时抓取
