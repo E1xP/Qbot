@@ -92,7 +92,7 @@ public class RssHubService implements Runnable {
         SyndFeed syndFeed=null;//抓取内容
         //抓取Rss内容
         try {
-            log.debug(rssFeedItem.getName() + " = 开始抓取");
+            log.info(rssFeedItem.getName() + " = 开始抓取");
             String requestUrl = rssFeedItem.getUrl() + (rssFeedItem.getUrl().contains("?") ? "&" : "?") + "limit=10";
             SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
             requestFactory.setConnectTimeout(5 * 1000);
@@ -190,7 +190,7 @@ public class RssHubService implements Runnable {
         } else {
             this.onError();
         }
-        log.debug(rssFeedItem.getName() + " = 完成抓取");
+        log.info(rssFeedItem.getName() + " = 完成抓取");
         synchronized (this) {
             this.setFinished(true);
         }
