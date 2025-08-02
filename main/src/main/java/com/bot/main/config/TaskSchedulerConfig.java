@@ -3,6 +3,7 @@ package com.bot.main.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 /**
@@ -14,6 +15,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
  * @Date 2022/10/28 028 下午 10:18
  **/
 @Configuration
+@EnableScheduling
 public class TaskSchedulerConfig {
     /**
      * 注入任务管理器

@@ -71,14 +71,6 @@ public class RsshubConfig {
      * 图片下载失败通知
      */
     Long downloadFailNotifier;
-    /**
-     * 连续失败通知
-     */
-    boolean errorInfo = false;
-    /**
-     * 连续失败通知阈值
-     */
-    int errorInfoCount = 0;
 
     /**
      * 单个分支连续失败告警
@@ -86,7 +78,7 @@ public class RsshubConfig {
     boolean branchErrorInfo = false;
 
     /**
-     *
+     * 分支告警数量
      */
     int branchErrorInfoCount = 0;
 }

@@ -9,16 +9,13 @@ import com.bot.rsshubqq.service.RssHubService;
 import com.bot.rsshubqq.utils.RssHubServiceFactory;
 import com.bot.utils.service.EarlyWarningService;
 import lombok.Data;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 
 import javax.annotation.Resource;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * @author E1xP@foxmail.com
@@ -31,7 +28,7 @@ import java.util.stream.Collectors;
 @Controller
 @Slf4j
 @Data
-public class RssHubController implements Runnable{
+public class RssHubController {
 
     @Resource
     RsshubConfig rsshubFeedConfig;
@@ -48,117 +45,31 @@ public class RssHubController implements Runnable{
     @Resource
     EarlyWarningService earlyWarningService;
 
-    int errorCount = 0;
-
-    Map<String, Integer> branchErrorMap = new HashMap<>();
-
-    boolean onWarningFlag = false;//是否已告警过
-
-    boolean isWarnThisPull = false;//本次是否告警
-
+    // 添加存储每个Feed的错误信息
+    private Map<String, String> feedErrorInfo = new HashMap<>();
+    
     /**
-     * 存放执行线程的Array
+     * 删除临时文件夹中指定时间之前的文件
+     * 只删除距离现在超过两倍全局抓取时间的文件
      */
-    ArrayList<RssHubService> threads = new ArrayList<>();
+    public void clearOldTempFiles() {
+        File tempDir = new File(rsshubFeedConfig.getTempPath());
+        if (tempDir.exists() && tempDir.isDirectory()) {
+            // 计算三倍全局抓取时间
+            long threshold = System.currentTimeMillis() - (rsshubFeedConfig.getQueryTime() * 3 * 1000L);
 
-    ArrayList<Thread> threadArrayList = new ArrayList<>();
-
-    @SneakyThrows
-    @Override
-    public synchronized void run() {
-        while (!Thread.currentThread().isInterrupted()) {
-            isWarnThisPull = false;
-            clearTempFile();//清空临时文件夹
-            log.info("开始抓取RssFeed：" + rsshubFeedConfig.getRssList().stream().map(RssFeedItem::getName).collect(Collectors.toList()));
-            threads.clear();//清空线程所在
-            threadArrayList.clear();
-            for (RssFeedItem item : rsshubFeedConfig.getRssList()) {
-                RssHubService rssHubService = rssHubServiceFactory.getRssHubService(item, this);
-                Thread thread = new Thread(rssHubService);//构建新的独立抓取线程
-                thread.setName("RssHub");
-                threads.add(rssHubService);
-                threadArrayList.add(thread);
-                thread.start();
-                if(rsshubFeedConfig.getRssList().size()-1!=rsshubFeedConfig.getRssList().indexOf(item)) {
-                    //非最后一个间隔休眠
-                    Thread.sleep(rsshubFeedConfig.getItemPauseTime() * 1000L);
+            File[] files = tempDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    // 如果文件最后修改时间早于阈值，则删除
+                    if (file.lastModified() < threshold) {
+                        if (file.delete()) {
+                            log.debug("已删除临时文件: {}", file.getName());
+                        } else {
+                            log.warn("删除临时文件失败: {}", file.getName());
+                        }
+                    }
                 }
-            }
-            log.debug("开始等待完成抓取");
-            while (isPullUnFinish()) {
-                //当未抓取完时等待
-                synchronized (this) {
-                    this.wait();
-                }
-            }
-            //完成抓取保存结果
-            log.info("完成抓取");
-            rsshubMapper.save();
-
-            //告警逻辑
-            if (errorCount >= (rsshubFeedConfig.getErrorInfoCount() <= 0 ? rsshubFeedConfig.getRssList().size() : rsshubFeedConfig.getErrorInfoCount())) {
-                //触发告警
-                isWarnThisPull = true;
-                if (!onWarningFlag) {
-                    onWarningFlag = true;
-                    earlyWarningService.sendEarlyWarning("RssHub-抓取告警", "本轮RssHub抓取已累计错误" + errorCount + "次！");
-                }
-                log.error("RssHub触发告警");
-            } else {
-                //告警恢复
-                if (onWarningFlag) {
-                    earlyWarningService.sendEarlyWarning("RssHub-抓取恢复", "RssHub抓取错误已恢复");
-                    log.info("RssHub告警已恢复");
-                }
-                onWarningFlag = false;
-            }
-            this.errorCount = 0;
-
-            this.wait();
-        }
-    }
-
-    /**
-     * 判断线程是否全部完成执行
-     * @return 是否完成执行
-     */
-    public boolean isPullUnFinish() {
-        synchronized(this) {//获取自己，防止执行过程中被唤醒，陷入等待检查完成的死锁
-            for (RssHubService item : threads) {
-                synchronized (item) {
-                    if (!item.isFinished())
-                        return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    /**
-     * 强制终止所有执行中的线程
-     */
-    public void suspendAll(){
-        synchronized (this){
-            for(Thread item:threadArrayList){
-                if(!item.isAlive()){
-                    item.stop();
-                }
-            }
-            for(RssHubService item:threads){
-                item.setFinished(true);
-            }
-        }
-    }
-
-    /**
-     * 删除临时文件中的文件
-     */
-    private void clearTempFile() {
-        File file = new File(rsshubFeedConfig.getTempPath());
-        if (file.exists()) {
-            File[] files = file.listFiles();
-            for (File item : files) {
-                item.delete();
             }
         }
     }
@@ -167,24 +78,17 @@ public class RssHubController implements Runnable{
     /**
      * 当遇到错误时
      */
-    public void onError(String branchName) {
+    public void onError(String branchName, String errorMessage, String stackTrace) {
         synchronized (this) {
-            //总体告警
-            if (rsshubFeedConfig.isErrorInfo()) {
-                this.errorCount++;
-            }
-            //分支告警
-            if (!rsshubFeedConfig.isBranchErrorInfo()) {
-                return;
-            }
-            if (branchErrorMap.containsKey(branchName)) {
-                int errorCount = branchErrorMap.get(branchName);
-                branchErrorMap.put(branchName, ++errorCount);
-                if (errorCount == rsshubFeedConfig.getBranchErrorInfoCount()) {
-                    earlyWarningService.sendEarlyWarning("RssHub-" + branchName + "抓取错误", "RssHub-" + branchName + ":累计抓取错误" + errorCount + "次");
-                }
-            } else {
-                branchErrorMap.put(branchName, 1);
+            // 存储错误信息
+            feedErrorInfo.put(branchName, errorMessage);
+
+            // 发送单个Feed的错误告警
+            if (rsshubFeedConfig.isBranchErrorInfo()) {
+                earlyWarningService.sendEarlyWarning(
+                        "RssHub-" + branchName + "抓取错误",
+                        "RssHub-" + branchName + "抓取失败: " + errorMessage + "\n堆栈信息:\n" + stackTrace
+                );
             }
         }
     }
@@ -194,14 +98,22 @@ public class RssHubController implements Runnable{
      */
     public void onSuccess(String branchName) {
         synchronized (this) {
-//            this.errorCount = 0;
-            if (branchErrorMap.containsKey(branchName)) {
-                int errrorCount = branchErrorMap.get(branchName);
-                branchErrorMap.remove(branchName);
-                if (errrorCount > rsshubFeedConfig.getBranchErrorInfoCount()) {
-                    earlyWarningService.sendEarlyWarning("RssHub-" + branchName + "抓取恢复", "RssHub-" + branchName + ":抓取错误已恢复");
-                }
+            // 发送恢复通知
+            if (rsshubFeedConfig.isBranchErrorInfo() && feedErrorInfo.containsKey(branchName)) {
+                earlyWarningService.sendEarlyWarning(
+                        "RssHub-" + branchName + "抓取恢复",
+                        "RssHub-" + branchName + ":抓取错误已恢复"
+                );
             }
+            // 清除错误信息
+            feedErrorInfo.remove(branchName);
         }
+    }
+
+    /**
+     * 获取指定Feed的RssHubService实例
+     */
+    public RssHubService getRssHubService(RssFeedItem feedItem) {
+        return rssHubServiceFactory.getRssHubService(feedItem, this);
     }
 }

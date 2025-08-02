@@ -8,6 +8,7 @@ import com.bot.rsshubqq.pojo.RssFeedItem;
 import com.bot.rsshubqq.pojo.RssItem;
 import com.bot.rsshubqq.pojo.RssResult;
 import com.bot.rsshubqq.utils.RssHubSendServiceFactory;
+import com.bot.rsshubqq.utils.RssHubServiceFactory;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.FeedException;
@@ -64,7 +65,13 @@ public class RssHubService implements Runnable {
     @Resource
     RsshubConfig rsshubConfig;
 
+    @Resource
+    RssHubServiceFactory rssHubServiceFactory;
+
     boolean finished = false;
+
+    // 添加异常信息存储
+    private Exception lastException;
 
     public RssHubService() {
     }
@@ -106,17 +113,24 @@ public class RssHubService implements Runnable {
                     //Feed无法解析
                     log.error(rssFeedItem.getName() + " = 无法解析URL请求的内容：\n" + response.getBody());
                     errorFlag.set(true);//设置抓取错误
+                    lastException = e;
                     return null;
                 }
             });
         } catch (HttpClientErrorException|HttpServerErrorException e) {
             errorFlag.set(true);//设置抓取错误
+            lastException = e;
             //抓取中出现网络错误
             log.error(rssFeedItem.getName()+" = 抓取网络错误：" + e.getStatusCode() + "\n" + e.getResponseBodyAsString());
         }catch (ResourceAccessException e){
             errorFlag.set(true);//设置抓取错误
+            lastException = e;
             //抓取中出现网络错误
             log.error(rssFeedItem.getName()+" = 抓取网络错误：" + e.getMessage());
+        } catch (Exception e) {
+            errorFlag.set(true);
+            lastException = e;
+            log.error(rssFeedItem.getName() + " = 抓取时发生未知错误：" + e.getMessage(), e);
         }
         if (!errorFlag.get()&&syndFeed!=null) {//检查是否有抓取错误
             //对抓取内容进行处理
@@ -190,7 +204,19 @@ public class RssHubService implements Runnable {
      * 当错误时调用
      */
     void onError() {
-        rssHubController.onError(rssFeedItem.getName());
+        String errorMessage = "未知错误";
+        String stackTrace = "";
+
+        if (lastException != null) {
+            errorMessage = lastException.getMessage();
+            StringBuilder sb = new StringBuilder();
+            for (StackTraceElement element : lastException.getStackTrace()) {
+                sb.append(element.toString()).append("\n");
+            }
+            stackTrace = sb.toString();
+        }
+
+        rssHubController.onError(rssFeedItem.getName(), errorMessage, stackTrace);
     }
 
     /**
@@ -198,5 +224,7 @@ public class RssHubService implements Runnable {
      */
     void onSuccess() {
         rssHubController.onSuccess(rssFeedItem.getName());
+        // 成功抓取后清理临时文件夹中过期的文件
+        rssHubController.clearOldTempFiles();
     }
 }

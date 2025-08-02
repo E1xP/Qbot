@@ -22,4 +22,6 @@ public class RssFeedItem {
     boolean feedProxy;
     boolean twitterRTFilter;
     boolean twitterREFilter;
+    // 添加独立的查询时间配置
+    int queryTime = 0; // 0表示使用全局配置
 }

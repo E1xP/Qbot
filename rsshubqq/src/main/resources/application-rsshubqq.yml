@@ -2,10 +2,11 @@
   level:
     com.bot.rsshubqq: debug
 translate:
-  appId: "20200322000402814"          #翻译app应用id
-  securityKey: "vUckpxROgnk7m8d5ZUv9" #翻译app对应的密钥
-  url: "https://fanyi-api.baidu.com/api/trans/vip/translate"  #翻译接口url
+  appId: ""          #翻译app应用id
+  securityKey: "" #翻译app对应的密钥
+  url: "http://127.0.0.1:8000/translate"  #翻译接口url
   targetLanguage: "zh"  #翻译目标语言
+  apiName: "baidu"      #使用api名称
 rsshub:
   downloadFailNotify: true #是否在图片下载失败时通知
   downloadFailNotifier: 451060876 #图片下载失败通知
@@ -19,8 +20,6 @@ rsshub:
   accessPort: 8081    #外部访问端口
   proxyUrl: 192.168.199.8 #代理地址
   proxyPort: 10809 #Http代理端口
-  errorInfo: false #是否开启RssHub错误提示
-  errorInfoCount: 0 #RssHub错误提示阈值; 为0则默认为列表数量
   branchErrorInfo: false #是否开启RssHub分支错误提示
   branchErrorInfoCount: 0 #RssHub分支错误提示阈值
   rssList:
@@ -32,3 +31,4 @@ rsshub:
       proxy: true
       feedProxy: true
       twitterRTFilter: true #推特转发过滤
+      queryTime: 300
