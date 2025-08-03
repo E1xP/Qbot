@@ -223,6 +223,9 @@ public class RssHubService implements Runnable {
      * 当成功时调用
      */
     void onSuccess() {
+        synchronized (rsshubMapper) {
+            rsshubMapper.save();
+        }
         rssHubController.onSuccess(rssFeedItem.getName());
         // 成功抓取后清理临时文件夹中过期的文件
         rssHubController.clearOldTempFiles();
