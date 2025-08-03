@@ -46,7 +46,7 @@ public class RssHubController {
     EarlyWarningService earlyWarningService;
 
     // 添加存储每个Feed的错误信息
-    private Map<String, String> feedErrorInfo = new HashMap<>();
+    private Map<String, Integer> feedErrorInfo = new HashMap<>();
     
     /**
      * 删除临时文件夹中指定时间之前的文件
@@ -81,15 +81,20 @@ public class RssHubController {
     public void onError(String branchName, String errorMessage, String stackTrace) {
         synchronized (this) {
             // 存储错误信息
-            feedErrorInfo.put(branchName, errorMessage);
+            int errorCount = 0;
+            if (feedErrorInfo.containsKey(branchName)) {
+                errorCount = feedErrorInfo.get(branchName);
+            }
+            errorCount++;
 
             // 发送单个Feed的错误告警
-            if (rsshubFeedConfig.isBranchErrorInfo()) {
+            if (rsshubFeedConfig.isBranchErrorInfo() && errorCount > rsshubFeedConfig.getBranchErrorInfoCount()) {
                 earlyWarningService.sendEarlyWarning(
                         "RssHub-" + branchName + "抓取错误",
                         "RssHub-" + branchName + "抓取失败: " + errorMessage + "\n堆栈信息:\n" + stackTrace
                 );
             }
+            feedErrorInfo.put(branchName, errorCount);
         }
     }
 
@@ -98,8 +103,13 @@ public class RssHubController {
      */
     public void onSuccess(String branchName) {
         synchronized (this) {
+            int errorCount = 0;
+            if (feedErrorInfo.containsKey(branchName)) {
+                errorCount = feedErrorInfo.get(branchName);
+            }
+
             // 发送恢复通知
-            if (rsshubFeedConfig.isBranchErrorInfo() && feedErrorInfo.containsKey(branchName)) {
+            if (rsshubFeedConfig.isBranchErrorInfo() && errorCount > rsshubFeedConfig.getBranchErrorInfoCount()) {
                 earlyWarningService.sendEarlyWarning(
                         "RssHub-" + branchName + "抓取恢复",
                         "RssHub-" + branchName + ":抓取错误已恢复"
