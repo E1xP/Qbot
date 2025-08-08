@@ -88,7 +88,7 @@ public class RssHubController {
             errorCount++;
 
             // 发送单个Feed的错误告警
-            if (rsshubFeedConfig.isBranchErrorInfo() && errorCount > rsshubFeedConfig.getBranchErrorInfoCount()) {
+            if (rsshubFeedConfig.isBranchErrorInfo() && errorCount == rsshubFeedConfig.getBranchErrorInfoCount()) {
                 earlyWarningService.sendEarlyWarning(
                         "RssHub-" + branchName + "抓取错误",
                         "RssHub-" + branchName + "抓取失败: \n" + errorMessage + "\n堆栈信息:\n" + stackTrace
