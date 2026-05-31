@@ -380,6 +380,33 @@ public class NudeNetOnnxDetector {
         return ready;
     }
 
+    private static void appendDetectionHits(StringBuilder summary, List<NudeNetDetection> valid) {
+        if (valid.isEmpty()) {
+            return;
+        }
+        List<NudeNetDetection> sorted = new ArrayList<>(valid);
+        sorted.sort(Comparator.comparing(NudeNetDetection::getScore).reversed());
+        summary.append(", hits=");
+        int limit = Math.min(8, sorted.size());
+        for (int i = 0; i < limit; i++) {
+            NudeNetDetection d = sorted.get(i);
+            if (i > 0) {
+                summary.append(';');
+            }
+            summary.append(d.getLabel()).append('=').append(format(d.getScore()));
+        }
+        if (sorted.size() > limit) {
+            summary.append(";...(+").append(sorted.size() - limit).append(')');
+        }
+    }
+
+    /**
+     * 检测 + 聚合规则，返回是否 ban 及日志摘要。
+     */
+    public JudgeResult judge(byte[] imageBytes) throws Exception {
+        return judge(predict(imageBytes));
+    }
+
     public List<NudeNetDetection> predict(byte[] imageBytes) throws Exception {
         if (!ready) {
             throw new IllegalStateException("NudeNet 模型未就绪");
@@ -391,20 +418,14 @@ public class NudeNetOnnxDetector {
         LetterboxResult letterbox = letterbox(source, inputSize);
         float[] nchw = toNchw(letterbox.image, inputSize);
         long[] shape = new long[]{1, 3, inputSize, inputSize};
+        float decodeThreshold = Math.max(MIN_BOX_SCORE, config.getNudenet().getMinDetectionScore());
         try (OnnxTensor tensor = OnnxTensor.createTensor(environment, FloatBuffer.wrap(nchw), shape);
              OrtSession.Result result = session.run(Map.of(inputName, tensor))) {
             float[][] channels = extractOutputChannels(result.get(0).getValue());
-            List<RawDetection> raw = decodeYolo(channels, config.getNudenet().getMinDetectionScore());
+            List<RawDetection> raw = decodeYolo(channels, decodeThreshold);
             raw = nonMaxSuppression(raw, config.getNudenet().getNmsIouThreshold());
             return mapToOriginal(raw, letterbox, source.getWidth(), source.getHeight());
         }
-    }
-
-    /**
-     * 检测 + 聚合规则，返回是否 ban 及日志摘要。
-     */
-    public JudgeResult judge(byte[] imageBytes) throws Exception {
-        return judge(predict(imageBytes));
     }
 
     public JudgeResult judge(List<NudeNetDetection> detections) {
@@ -419,6 +440,7 @@ public class NudeNetOnnxDetector {
 
         StringBuilder summary = new StringBuilder();
         summary.append("boxes=").append(valid.size());
+        appendDetectionHits(summary, valid);
 
         for (Map.Entry<String, Float> entry : LABEL_THRESHOLDS.entrySet()) {
             float agg = softOrScores(valid, entry.getKey());

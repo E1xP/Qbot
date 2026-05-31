@@ -69,6 +69,13 @@ public class ModerationVerdict {
     }
 
     /**
+     * 精判日志用结果：违规 / 放行（仅 refined 后有意义）。
+     */
+    public String resolveRefineLogResult() {
+        return isTriggered() ? "违规" : "放行";
+    }
+
+    /**
      * 日志用审核结果：违规 / 过线 / 放行。
      */
     public String resolveLogResult(double thresholdPercent) {

@@ -70,24 +70,48 @@ public class GroupModerationService {
 
     private static void logModerationResult(ModerationTask task, String fileName, ModerationLogKind kind,
                                             ModerationVerdict verdict, double prescreenThreshold) {
+        logModerationResult(task, fileName, kind, verdict, prescreenThreshold, false);
+    }
+
+    private static void logModerationResult(ModerationTask task, String fileName, ModerationLogKind kind,
+                                            ModerationVerdict verdict, double prescreenThreshold,
+                                            boolean nudenetExecuted) {
+        if (kind == ModerationLogKind.REFINE || (kind == ModerationLogKind.CACHE && verdict.isRefined())) {
+            logRefineResult(task, fileName, kind, verdict, nudenetExecuted);
+            return;
+        }
+        logPrescreenResult(task, fileName, kind, verdict, prescreenThreshold);
+    }
+
+    private static void logPrescreenResult(ModerationTask task, String fileName, ModerationLogKind kind,
+                                           ModerationVerdict verdict, double prescreenThreshold) {
+        String msg = "群审·" + kind.label +
+                " | result=" + verdict.resolveLogResult(prescreenThreshold) +
+                " | prescreenPass=" + verdict.isPrescreenPass(prescreenThreshold) +
+                " | confidence=" + String.format(Locale.ROOT, "%.1f", verdict.getPrescreenConfidence()) + '%' +
+                " | threshold=" + String.format(Locale.ROOT, "%.0f", prescreenThreshold) + '%' +
+                " | scores=" + verdict.getPrescreenScores() +
+                " | groupId=" + task.getGroupId() +
+                " | messageId=" + task.getMessageId() +
+                " | userId=" + task.getUserId() +
+                " | nickname=" + task.getSenderNickname() +
+                " | file=" + fileName;
+        log.info(msg);
+    }
+
+    private static void logRefineResult(ModerationTask task, String fileName, ModerationLogKind kind,
+                                        ModerationVerdict verdict, boolean nudenetExecuted) {
         StringBuilder msg = new StringBuilder();
         msg.append("群审·").append(kind.label)
-                .append(" | result=").append(verdict.resolveLogResult(prescreenThreshold))
+                .append(" | refineResult=").append(verdict.resolveRefineLogResult())
+                .append(" | nudenet=").append(nudenetExecuted ? "执行" : "缓存")
+                .append(" | detail=").append(verdict.getRefineSummary() != null ? verdict.getRefineSummary() : "-")
+                .append(" | prescreen=").append(String.format(Locale.ROOT, "%.1f", verdict.getPrescreenConfidence())).append('%')
                 .append(" | groupId=").append(task.getGroupId())
                 .append(" | messageId=").append(task.getMessageId())
                 .append(" | userId=").append(task.getUserId())
                 .append(" | nickname=").append(task.getSenderNickname())
-                .append(" | file=").append(fileName)
-                .append(" | confidence=").append(String.format(Locale.ROOT, "%.1f", verdict.getPrescreenConfidence())).append('%')
-                .append(" | scores=").append(verdict.getPrescreenScores());
-
-        if (kind == ModerationLogKind.PRESCREEN || (kind == ModerationLogKind.CACHE && !verdict.isRefined())) {
-            msg.append(" | prescreenPass=").append(verdict.isPrescreenPass(prescreenThreshold))
-                    .append(" | threshold=").append(String.format(Locale.ROOT, "%.0f", prescreenThreshold)).append('%');
-        }
-        if (verdict.isRefined() && verdict.getRefineSummary() != null) {
-            msg.append(" | refine=").append(verdict.getRefineSummary());
-        }
+                .append(" | file=").append(fileName);
         if (verdict.isTriggered() && verdict.getTrigger() != null) {
             TriggerResult trigger = verdict.getTrigger();
             msg.append(" | trigger=").append(trigger.getLabel())
@@ -324,14 +348,14 @@ public class GroupModerationService {
             Optional<ModerationVerdict> cached = cacheGet(imageBytes);
             if (cached.isPresent() && cached.get().isRefined()) {
                 verdict = cached.get().withImageBytes(imageBytes);
-                logModerationResult(messageTask, fileName, ModerationLogKind.CACHE, verdict, prescreenThreshold);
+                logModerationResult(messageTask, fileName, ModerationLogKind.CACHE, verdict, prescreenThreshold, false);
             } else {
                 NudeNetOnnxDetector.JudgeResult judge = refineDetector.judge(imageBytes);
                 verdict = ModerationVerdict.of(
                         pending.getPrescreenScores(), pending.getPrescreenConfidence(),
                         true, judge.getSummary(), judge.getTrigger(), imageBytes);
                 cachePut(imageBytes, verdict);
-                logModerationResult(messageTask, fileName, ModerationLogKind.REFINE, verdict, prescreenThreshold);
+                logModerationResult(messageTask, fileName, ModerationLogKind.REFINE, verdict, prescreenThreshold, true);
             }
             all.add(new RefineTask.DoneImage(pending.getSegment(), verdict));
         }
