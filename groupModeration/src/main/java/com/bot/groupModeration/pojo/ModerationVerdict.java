@@ -59,6 +59,32 @@ public class ModerationVerdict {
     }
 
     /**
+     * 初筛是否通过（置信度低于阈值，无需精判）。
+     */
+    public boolean isPrescreenPass(double thresholdPercent) {
+        if (awaitingRefine || refined) {
+            return false;
+        }
+        return prescreenConfidence < thresholdPercent;
+    }
+
+    /**
+     * 日志用审核结果：违规 / 过线 / 放行。
+     */
+    public String resolveLogResult(double thresholdPercent) {
+        if (isTriggered()) {
+            return "违规";
+        }
+        if (awaitingRefine) {
+            return "过线";
+        }
+        if (refined) {
+            return "放行";
+        }
+        return prescreenConfidence < thresholdPercent ? "放行" : "过线";
+    }
+
+    /**
      * 撤回 / 告警用摘要
      */
     public String actionSummary() {

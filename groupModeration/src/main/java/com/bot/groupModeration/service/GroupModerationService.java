@@ -68,13 +68,127 @@ public class GroupModerationService {
         return sb.toString();
     }
 
-    private static void logVerdict(ModerationTask task, String fileName, String stage,
-                                   ModerationVerdict verdict, boolean cache) {
-        log.info("群审识别 stage={} groupId={} messageId={} userId={} nickname={} file={} confidence={}% refined={} triggered={} cache={} scores={} refine={}",
-                stage, task.getGroupId(), task.getMessageId(), task.getUserId(), task.getSenderNickname(),
-                fileName, String.format(Locale.ROOT, "%.1f", verdict.getPrescreenConfidence()),
-                verdict.isRefined(), verdict.isTriggered(), cache, verdict.getPrescreenScores(),
-                verdict.isRefined() ? verdict.getRefineSummary() : "-");
+    private static void logModerationResult(ModerationTask task, String fileName, ModerationLogKind kind,
+                                            ModerationVerdict verdict, double prescreenThreshold) {
+        StringBuilder msg = new StringBuilder();
+        msg.append("群审·").append(kind.label)
+                .append(" | result=").append(verdict.resolveLogResult(prescreenThreshold))
+                .append(" | groupId=").append(task.getGroupId())
+                .append(" | messageId=").append(task.getMessageId())
+                .append(" | userId=").append(task.getUserId())
+                .append(" | nickname=").append(task.getSenderNickname())
+                .append(" | file=").append(fileName)
+                .append(" | confidence=").append(String.format(Locale.ROOT, "%.1f", verdict.getPrescreenConfidence())).append('%')
+                .append(" | scores=").append(verdict.getPrescreenScores());
+
+        if (kind == ModerationLogKind.PRESCREEN || (kind == ModerationLogKind.CACHE && !verdict.isRefined())) {
+            msg.append(" | prescreenPass=").append(verdict.isPrescreenPass(prescreenThreshold))
+                    .append(" | threshold=").append(String.format(Locale.ROOT, "%.0f", prescreenThreshold)).append('%');
+        }
+        if (verdict.isRefined() && verdict.getRefineSummary() != null) {
+            msg.append(" | refine=").append(verdict.getRefineSummary());
+        }
+        if (verdict.isTriggered() && verdict.getTrigger() != null) {
+            TriggerResult trigger = verdict.getTrigger();
+            msg.append(" | trigger=").append(trigger.getLabel())
+                    .append(" | triggerScore=").append(String.format(Locale.ROOT, "%.3f", trigger.getScore()))
+                    .append(" | triggerThreshold=").append(trigger.getThreshold());
+        }
+        log.info(msg.toString());
+    }
+
+    private static void logFetchFailed(ModerationTask task, String fileName) {
+        log.warn("群审·初筛 | result=失败 | reason=fetch_empty | groupId={} | messageId={} | file={}",
+                task.getGroupId(), task.getMessageId(), fileName);
+    }
+
+    private void runPrescreen(ModerationTask task) throws Exception {
+        CoolQ cq = CQGlobal.robots.get(task.getSelfId());
+        if (cq == null) {
+            log.warn("机器人不可用 selfId={} messageId={}", task.getSelfId(), task.getMessageId());
+            return;
+        }
+        Optional<GroupModerationItem> groupOpt = config.findGroup(task.getGroupId());
+        if (!groupOpt.isPresent()) {
+            log.warn("群审任务放弃 messageId={} groupId={} reason=group_not_configured", task.getMessageId(), task.getGroupId());
+            return;
+        }
+        GroupModerationItem groupConfig = groupOpt.get();
+        double prescreenThreshold = groupConfig.resolvePrescreenThresholdPercent(config.getPrescreenThreshold());
+
+        List<RefineTask.DoneImage> done = new ArrayList<>();
+        List<RefineTask.PendingImage> pending = new ArrayList<>();
+
+        for (CqImageParser.CqImageSegment segment : task.getImageSegments()) {
+            String fileName = CqImageParser.displayName(segment);
+            byte[] imageBytes = imageFetchService.fetch(cq, segment).orElse(null);
+            if (imageBytes == null || imageBytes.length == 0) {
+                logFetchFailed(task, fileName);
+                continue;
+            }
+
+            Optional<ModerationVerdict> cached = cacheGet(imageBytes);
+            if (cached.isPresent()) {
+                ModerationVerdict cachedVerdict = cached.get();
+                if (cachedVerdict.isAwaitingRefine()) {
+                    logModerationResult(task, fileName, ModerationLogKind.CACHE,
+                            cachedVerdict.withImageBytes(imageBytes), prescreenThreshold);
+                    pending.add(RefineTask.PendingImage.builder()
+                            .segment(segment)
+                            .imageBytes(imageBytes)
+                            .prescreenConfidence(cachedVerdict.getPrescreenConfidence())
+                            .prescreenScores(cachedVerdict.getPrescreenScores())
+                            .build());
+                    continue;
+                }
+                ModerationVerdict verdict = cachedVerdict.withImageBytes(imageBytes);
+                logModerationResult(task, fileName, ModerationLogKind.CACHE, verdict, prescreenThreshold);
+                done.add(new RefineTask.DoneImage(segment, verdict));
+                continue;
+            }
+
+            NsfwPrediction prediction = prescreenDetector.predict(imageBytes);
+            float confidence = prediction.getConfidencePercent();
+            String scores = prediction.formatTopScores();
+
+            if (!prediction.passesPrescreen(prescreenThreshold)) {
+                ModerationVerdict verdict = ModerationVerdict.prescreenPass(scores, confidence, imageBytes);
+                cachePut(imageBytes, verdict);
+                logModerationResult(task, fileName, ModerationLogKind.PRESCREEN, verdict, prescreenThreshold);
+                done.add(new RefineTask.DoneImage(segment, verdict));
+                continue;
+            }
+
+            ModerationVerdict awaitVerdict = ModerationVerdict.prescreenAwaitRefine(scores, confidence, imageBytes);
+            cachePut(imageBytes, awaitVerdict);
+            logModerationResult(task, fileName, ModerationLogKind.PRESCREEN, awaitVerdict, prescreenThreshold);
+            pending.add(RefineTask.PendingImage.builder()
+                    .segment(segment)
+                    .imageBytes(imageBytes)
+                    .prescreenConfidence(confidence)
+                    .prescreenScores(scores)
+                    .build());
+        }
+
+        if (pending.isEmpty()) {
+            applyActions(cq, task, groupConfig, done);
+            return;
+        }
+
+        RefineTask refineTask = RefineTask.builder()
+                .selfId(task.getSelfId())
+                .messageId(task.getMessageId())
+                .groupId(task.getGroupId())
+                .userId(task.getUserId())
+                .senderNickname(task.getSenderNickname())
+                .pending(pending)
+                .prescreenDone(done)
+                .build();
+        if (!refineQueue.offer(refineTask)) {
+            log.warn("精判队列已满，丢弃 messageId={} groupId={} pendingImages={}，对已确认命中图仍尝试处置",
+                    task.getMessageId(), task.getGroupId(), pending.size());
+            applyActions(cq, task, groupConfig, done);
+        }
     }
 
     private static String formatSavedImageName(File file) {
@@ -180,98 +294,6 @@ public class GroupModerationService {
         }
     }
 
-    private void runPrescreen(ModerationTask task) throws Exception {
-        CoolQ cq = CQGlobal.robots.get(task.getSelfId());
-        if (cq == null) {
-            log.warn("机器人不可用 selfId={} messageId={}", task.getSelfId(), task.getMessageId());
-            return;
-        }
-        Optional<GroupModerationItem> groupOpt = config.findGroup(task.getGroupId());
-        if (!groupOpt.isPresent()) {
-            log.warn("群审任务放弃 messageId={} groupId={} reason=group_not_configured", task.getMessageId(), task.getGroupId());
-            return;
-        }
-        GroupModerationItem groupConfig = groupOpt.get();
-        double prescreenThreshold = groupConfig.resolvePrescreenThresholdPercent(config.getPrescreenThreshold());
-
-        List<RefineTask.DoneImage> done = new ArrayList<>();
-        List<RefineTask.PendingImage> pending = new ArrayList<>();
-
-        for (CqImageParser.CqImageSegment segment : task.getImageSegments()) {
-            String fileName = CqImageParser.displayName(segment);
-            byte[] imageBytes = imageFetchService.fetch(cq, segment).orElse(null);
-            if (imageBytes == null || imageBytes.length == 0) {
-                log.warn("群审识别失败 stage=prescreen groupId={} messageId={} file={} reason=fetch_empty",
-                        task.getGroupId(), task.getMessageId(), fileName);
-                continue;
-            }
-
-            Optional<ModerationVerdict> cached = cacheGet(imageBytes);
-            if (cached.isPresent()) {
-                ModerationVerdict cachedVerdict = cached.get();
-                if (cachedVerdict.isAwaitingRefine()) {
-                    log.info("群审初筛 cache=awaiting_refine groupId={} messageId={} file={} confidence={}% → 入精判队列",
-                            task.getGroupId(), task.getMessageId(), fileName,
-                            String.format(Locale.ROOT, "%.1f", cachedVerdict.getPrescreenConfidence()));
-                    pending.add(RefineTask.PendingImage.builder()
-                            .segment(segment)
-                            .imageBytes(imageBytes)
-                            .prescreenConfidence(cachedVerdict.getPrescreenConfidence())
-                            .prescreenScores(cachedVerdict.getPrescreenScores())
-                            .build());
-                    continue;
-                }
-                ModerationVerdict verdict = cachedVerdict.withImageBytes(imageBytes);
-                logVerdict(task, fileName, "prescreen", verdict, true);
-                done.add(new RefineTask.DoneImage(segment, verdict));
-                continue;
-            }
-
-            NsfwPrediction prediction = prescreenDetector.predict(imageBytes);
-            float confidence = prediction.getConfidencePercent();
-            String scores = prediction.formatTopScores();
-
-            if (!prediction.passesPrescreen(prescreenThreshold)) {
-                ModerationVerdict verdict = ModerationVerdict.prescreenPass(scores, confidence, imageBytes);
-                cachePut(imageBytes, verdict);
-                logVerdict(task, fileName, "prescreen", verdict, false);
-                done.add(new RefineTask.DoneImage(segment, verdict));
-                continue;
-            }
-
-            log.info("群审初筛过线 groupId={} messageId={} file={} confidence={}% → 入精判队列",
-                    task.getGroupId(), task.getMessageId(), fileName,
-                    String.format(Locale.ROOT, "%.1f", confidence));
-            cachePut(imageBytes, ModerationVerdict.prescreenAwaitRefine(scores, confidence, imageBytes));
-            pending.add(RefineTask.PendingImage.builder()
-                    .segment(segment)
-                    .imageBytes(imageBytes)
-                    .prescreenConfidence(confidence)
-                    .prescreenScores(scores)
-                    .build());
-        }
-
-        if (pending.isEmpty()) {
-            applyActions(cq, task, groupConfig, done);
-            return;
-        }
-
-        RefineTask refineTask = RefineTask.builder()
-                .selfId(task.getSelfId())
-                .messageId(task.getMessageId())
-                .groupId(task.getGroupId())
-                .userId(task.getUserId())
-                .senderNickname(task.getSenderNickname())
-                .pending(pending)
-                .prescreenDone(done)
-                .build();
-        if (!refineQueue.offer(refineTask)) {
-            log.warn("精判队列已满，丢弃 messageId={} groupId={} pendingImages={}，对已确认命中图仍尝试处置",
-                    task.getMessageId(), task.getGroupId(), pending.size());
-            applyActions(cq, task, groupConfig, done);
-        }
-    }
-
     private void runRefine(RefineTask task) throws Exception {
         CoolQ cq = CQGlobal.robots.get(task.getSelfId());
         if (cq == null) {
@@ -283,6 +305,7 @@ public class GroupModerationService {
             return;
         }
         GroupModerationItem groupConfig = groupOpt.get();
+        double prescreenThreshold = groupConfig.resolvePrescreenThresholdPercent(config.getPrescreenThreshold());
 
         List<RefineTask.DoneImage> all = new ArrayList<>(task.getPrescreenDone());
         ModerationTask messageTask = ModerationTask.builder()
@@ -301,19 +324,31 @@ public class GroupModerationService {
             Optional<ModerationVerdict> cached = cacheGet(imageBytes);
             if (cached.isPresent() && cached.get().isRefined()) {
                 verdict = cached.get().withImageBytes(imageBytes);
-                logVerdict(messageTask, fileName, "refine", verdict, true);
+                logModerationResult(messageTask, fileName, ModerationLogKind.CACHE, verdict, prescreenThreshold);
             } else {
                 NudeNetOnnxDetector.JudgeResult judge = refineDetector.judge(imageBytes);
                 verdict = ModerationVerdict.of(
                         pending.getPrescreenScores(), pending.getPrescreenConfidence(),
                         true, judge.getSummary(), judge.getTrigger(), imageBytes);
                 cachePut(imageBytes, verdict);
-                logVerdict(messageTask, fileName, "refine", verdict, false);
+                logModerationResult(messageTask, fileName, ModerationLogKind.REFINE, verdict, prescreenThreshold);
             }
             all.add(new RefineTask.DoneImage(pending.getSegment(), verdict));
         }
 
         applyActions(cq, messageTask, groupConfig, all);
+    }
+
+    private enum ModerationLogKind {
+        PRESCREEN("初筛"),
+        REFINE("精判"),
+        CACHE("缓存");
+
+        private final String label;
+
+        ModerationLogKind(String label) {
+            this.label = label;
+        }
     }
 
     private void applyActions(CoolQ cq, ModerationTask task, GroupModerationItem groupConfig,
