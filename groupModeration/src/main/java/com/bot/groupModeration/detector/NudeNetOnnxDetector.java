@@ -70,7 +70,8 @@ public class NudeNetOnnxDetector {
     }
 
     /**
-     * 兼容 YOLOv8 ONNX 输出：[1, 4+nc, anchors] 或 [1, anchors, 4+nc]。
+     * 归一化为 {@code [4+nc, anchors]}（channels 为行、anchors 为列）。
+     * YOLOv8 常见形状 {@code [1, 22, 8400]} 或 {@code [1, 8400, 22]}。
      */
     private static float[][] extractOutputChannels(Object value) {
         if (value instanceof float[][][]) {
@@ -78,24 +79,26 @@ public class NudeNetOnnxDetector {
             if (cube.length == 0 || cube[0].length == 0 || cube[0][0].length == 0) {
                 throw new IllegalStateException("NudeNet ONNX 输出为空");
             }
-            int dim1 = cube[0].length;
-            int dim2 = cube[0][0].length;
-            if (dim1 >= dim2) {
-                return cube[0];
-            }
-            return transpose(cube[0]);
+            return orientChannelsFirst(cube[0]);
         }
         if (value instanceof float[][]) {
             float[][] matrix = (float[][]) value;
             if (matrix.length == 0 || matrix[0].length == 0) {
                 throw new IllegalStateException("NudeNet ONNX 输出为空");
             }
-            if (matrix.length >= matrix[0].length) {
-                return matrix;
-            }
-            return transpose(matrix);
+            return orientChannelsFirst(matrix);
         }
         throw new IllegalStateException("不支持的 NudeNet ONNX 输出类型: " + value.getClass());
+    }
+
+    /**
+     * 行数较少的一侧为 channel（约 4+18），列数较多的一侧为 anchor（约 8400）。
+     */
+    private static float[][] orientChannelsFirst(float[][] matrix) {
+        if (matrix.length <= matrix[0].length) {
+            return matrix;
+        }
+        return transpose(matrix);
     }
 
     private static float[][] transpose(float[][] matrix) {
@@ -281,7 +284,7 @@ public class NudeNetOnnxDetector {
         LetterboxResult letterbox = letterbox(source, inputSize);
         float[] nchw = toNchw(letterbox.image, inputSize);
         long[] shape = new long[]{1, 3, inputSize, inputSize};
-        float decodeThreshold = Math.max(MIN_BOX_SCORE, config.getNudenet().getMinDetectionScore());
+        float decodeThreshold = config.getNudenet().getMinDetectionScore();
         try (OnnxTensor tensor = OnnxTensor.createTensor(environment, FloatBuffer.wrap(nchw), shape);
              OrtSession.Result result = session.run(Map.of(inputName, tensor))) {
             float[][] channels = extractOutputChannels(result.get(0).getValue());

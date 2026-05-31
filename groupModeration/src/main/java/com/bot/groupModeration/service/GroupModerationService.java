@@ -103,25 +103,26 @@ public class GroupModerationService {
         StringBuilder msg = new StringBuilder();
         msg.append("群审·").append(kind.label)
                 .append(" | refineResult=").append(verdict.resolveRefineLogResult());
+        if (verdict.getRefineSummary() != null && !verdict.getRefineSummary().isEmpty()) {
+            msg.append(" | ").append(verdict.getRefineSummary());
+        }
         if (verdict.isTriggered() && verdict.getTrigger() != null) {
             msg.append(" | 触发=").append(verdict.resolveRefineTriggerPart())
                     .append(' ').append(String.format(Locale.ROOT, "%.0f%%",
                             verdict.getTrigger().getScore() * 100f));
         }
-        String hits = verdict.resolveRefineHitsForLog();
-        if (hits != null && !hits.isEmpty()) {
-            msg.append(" | 检测=").append(hits);
-        }
-        String aggs = verdict.resolveRefineAggsForLog();
-        if (aggs != null && !aggs.isEmpty()) {
-            msg.append(" | 聚合=").append(aggs);
-        }
-        msg.append(" | groupId=").append(task.getGroupId())
+        msg.append(" | 检测=").append(orNone(verdict.resolveRefineHitsForLog()))
+                .append(" | 聚合=").append(orNone(verdict.resolveRefineAggsForLog()))
+                .append(" | groupId=").append(task.getGroupId())
                 .append(" | messageId=").append(task.getMessageId())
                 .append(" | userId=").append(task.getUserId())
                 .append(" | nickname=").append(task.getSenderNickname())
                 .append(" | file=").append(fileName);
         log.info(msg.toString());
+    }
+
+    private static String orNone(String value) {
+        return value == null || value.isEmpty() ? "无" : value;
     }
 
     private static void logFetchFailed(ModerationTask task, String fileName) {

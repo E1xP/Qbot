@@ -21,7 +21,7 @@ group-moderation:
     # 可选外部路径；默认 classpath nudenet_640m.onnx
     input-size: 640
     nms-iou-threshold: 0.45
-    min-detection-score: 0.25
+    min-detection-score: 0.01
   storage-base-path: ./data/moderation/storage
   storage-retention-days: 7
   storage-cleanup-cron: "0 0 3 * * ?"

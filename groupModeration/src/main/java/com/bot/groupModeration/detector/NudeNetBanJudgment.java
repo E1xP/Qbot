@@ -50,17 +50,11 @@ public final class NudeNetBanJudgment {
      */
     public static RefineResult refine(List<NudeNetDetection> detections) {
         List<NudeNetDetection> all = detections != null ? detections : new ArrayList<>();
-        List<NudeNetDetection> loggable = new ArrayList<>();
-        for (NudeNetDetection d : all) {
-            if (isParticipating(d)) {
-                loggable.add(d);
-            }
-        }
 
         Evaluation eval = evaluate(all);
-        String hitsLog = formatHits(loggable);
+        String hitsLog = formatHits(all);
         String aggsLog = formatAggs(eval);
-        String summary = buildSummary(loggable.size(), eval);
+        String summary = buildSummary(all.size(), eval);
 
         TriggerResult trigger = eval.banned
                 ? TriggerResult.of("nudenet:" + eval.banReason, eval.banScore, eval.banThreshold)
@@ -82,14 +76,6 @@ public final class NudeNetBanJudgment {
             default:
                 return toDisplayPart(reason);
         }
-    }
-
-    private static boolean isParticipating(NudeNetDetection detection) {
-        if (detection == null || detection.getLabel() == null) {
-            return false;
-        }
-        Rule rule = RULES.get(normalizeLabel(detection.getLabel()));
-        return rule != null && !rule.ignored();
     }
 
     private static Evaluation evaluate(List<NudeNetDetection> detections) {
@@ -287,6 +273,16 @@ public final class NudeNetBanJudgment {
                 return "腹部(遮)";
             case "ARMPITS_EXPOSED":
                 return "腋下(裸)";
+            case "ARMPITS_COVERED":
+                return "腋下(遮)";
+            case "FACE_FEMALE":
+                return "女脸";
+            case "FACE_MALE":
+                return "男脸";
+            case "FEET_EXPOSED":
+                return "脚(裸)";
+            case "FEET_COVERED":
+                return "脚(遮)";
             default:
                 return label;
         }
