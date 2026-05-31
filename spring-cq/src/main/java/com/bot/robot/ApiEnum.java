@@ -37,6 +37,7 @@ public enum ApiEnum {
     GET_CREDENTIALS("get_credentials", "获取 QQ 相关接口凭证"),
     GET_RECORD("get_record", "获取语音"),
     GET_IMAGE("get_image", "获取图片"),
+    GET_FILE("get_file", "获取文件"),
     CAN_SEND_IMAGE("can_send_image", "检查是否可以发送图片"),
     CAN_SEND_RECORD("can_send_record", "检查是否可以发送语音"),
     GET_STATUS("get_status", "获取插件运行状态"),

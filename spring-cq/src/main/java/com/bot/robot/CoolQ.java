@@ -631,6 +631,23 @@ public class CoolQ {
     }
 
     /**
+     * 获取文件（群聊以文件形式发送的图片等）
+     *
+     * @param file CQ 码的 file 参数
+     * @return 结果
+     */
+    public ApiData<FileData> getFile(String file) {
+        ApiEnum action = ApiEnum.GET_FILE;
+
+        JSONObject params = new JSONObject();
+        params.put("file", file);
+
+        return apiHandler.sendApiMessage(botSession, action, params)
+                .toJavaObject(new TypeReference<ApiData<FileData>>() {
+                });
+    }
+
+    /**
      * 检查是否可以发送图片
      *
      * @return 结果

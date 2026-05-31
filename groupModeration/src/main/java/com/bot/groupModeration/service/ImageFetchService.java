@@ -114,7 +114,7 @@ public class ImageFetchService {
             return fromUrl;
         }
         if (segment.getFile() != null && !segment.getFile().isEmpty()) {
-            return fetchFromFileParam(cq, segment.getFile());
+            return fetchFromFileParam(cq, segment.getFile(), segment.isFileUpload());
         }
         return Optional.empty();
     }
@@ -149,7 +149,7 @@ public class ImageFetchService {
         return Optional.empty();
     }
 
-    private Optional<byte[]> fetchFromFileParam(CoolQ cq, String fileParam) {
+    private Optional<byte[]> fetchFromFileParam(CoolQ cq, String fileParam, boolean fileUpload) {
         if (fileParam.startsWith("http://") || fileParam.startsWith("https://")) {
             return fetchFromUrl(fileParam);
         }
@@ -164,23 +164,42 @@ public class ImageFetchService {
                 log.warn("读取本地图片失败 file={}", fileParam, e);
             }
         }
+        return fetchFromProtocolApi(cq, fileParam, fileUpload);
+    }
+
+    private Optional<byte[]> fetchFromProtocolApi(CoolQ cq, String fileParam, boolean fileUpload) {
         try {
-            ApiData<FileData> apiData = cq.getImage(fileParam);
-            if (apiData == null || apiData.getData() == null) {
-                return Optional.empty();
-            }
-            FileData data = apiData.getData();
-            if (data.getUrl() != null) {
-                Optional<byte[]> bytes = fetchFromUrl(data.getUrl());
-                if (bytes.isPresent()) {
-                    return bytes;
+            if (fileUpload) {
+                Optional<byte[]> fromFile = resolveFileData(cq.getFile(fileParam));
+                if (fromFile.isPresent()) {
+                    return fromFile;
                 }
+                return resolveFileData(cq.getImage(fileParam));
             }
-            if (data.getFile() != null) {
-                return fetchFromUrl(data.getFile());
+            Optional<byte[]> fromImage = resolveFileData(cq.getImage(fileParam));
+            if (fromImage.isPresent()) {
+                return fromImage;
             }
+            return resolveFileData(cq.getFile(fileParam));
         } catch (Exception e) {
-            log.warn("get_image 失败 file={}", fileParam, e);
+            log.warn("协议端拉取图片失败 file={} fileUpload={}", fileParam, fileUpload, e);
+            return Optional.empty();
+        }
+    }
+
+    private Optional<byte[]> resolveFileData(ApiData<FileData> apiData) {
+        if (apiData == null || apiData.getData() == null) {
+            return Optional.empty();
+        }
+        FileData data = apiData.getData();
+        if (data.getUrl() != null) {
+            Optional<byte[]> bytes = fetchFromUrl(data.getUrl());
+            if (bytes.isPresent()) {
+                return bytes;
+            }
+        }
+        if (data.getFile() != null) {
+            return fetchFromUrl(data.getFile());
         }
         return Optional.empty();
     }

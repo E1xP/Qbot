@@ -2,46 +2,68 @@ package com.bot.groupModeration.util;
 
 import com.bot.utils.CQCode;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 从群消息字符串中解析 [CQ:image,...] 段，提取 file / url 等参数供下载与审核。
+ * 从群消息解析可审核图片：{@code [CQ:image,...]} 与图片类型的 {@code [CQ:file,...]}。
  */
 public final class CqImageParser {
 
     private static final Pattern CQ_IMAGE = Pattern.compile("\\[CQ:image([^\\]]*)]", Pattern.CASE_INSENSITIVE);
+    private static final Pattern CQ_FILE = Pattern.compile("\\[CQ:file([^\\]]*)]", Pattern.CASE_INSENSITIVE);
+
+    private static final Set<String> IMAGE_EXT = new HashSet<>(Arrays.asList(
+            ".jpg", ".jpeg", ".jfif", ".png", ".gif", ".webp", ".bmp"
+    ));
 
     private CqImageParser() {
     }
 
     /**
-     * 消息中是否包含图片 CQ 码
+     * 消息中是否包含可审核图片（含图片文件上传）
      */
     public static boolean hasImage(String message) {
-        return message != null && CQ_IMAGE.matcher(message).find();
+        return !parseAll(message).isEmpty();
     }
 
-    /** 解析消息中全部图片段（一条消息可含多张图） */
+    /** 解析消息中全部可审核图片段 */
     public static List<CqImageSegment> parseAll(String message) {
         if (message == null) {
             return Collections.emptyList();
         }
-        Matcher matcher = CQ_IMAGE.matcher(message);
         List<CqImageSegment> list = new ArrayList<>();
-        while (matcher.find()) {
-            list.add(parseParams(matcher.group(1)));
+        Matcher imageMatcher = CQ_IMAGE.matcher(message);
+        while (imageMatcher.find()) {
+            list.add(parseImageParams(imageMatcher.group(1)));
+        }
+        Matcher fileMatcher = CQ_FILE.matcher(message);
+        while (fileMatcher.find()) {
+            CqImageSegment segment = parseFileParams(fileMatcher.group(1));
+            if (isImageFileSegment(segment)) {
+                list.add(segment);
+            }
         }
         return list;
     }
 
-    private static CqImageSegment parseParams(String paramPart) {
+    private static CqImageSegment parseImageParams(String paramPart) {
         CqImageSegment segment = new CqImageSegment();
+        fillParams(segment, paramPart, false);
+        return segment;
+    }
+
+    private static CqImageSegment parseFileParams(String paramPart) {
+        CqImageSegment segment = new CqImageSegment();
+        segment.setFileUpload(true);
+        fillParams(segment, paramPart, true);
+        return segment;
+    }
+
+    private static void fillParams(CqImageSegment segment, String paramPart, boolean includeName) {
         if (paramPart == null || paramPart.isEmpty()) {
-            return segment;
+            return;
         }
         String[] pairs = paramPart.split(",");
         for (String pair : pairs) {
@@ -58,17 +80,47 @@ public final class CqImageParser {
                 case "url":
                     segment.setUrl(value);
                     break;
+                case "name":
+                    if (includeName) {
+                        segment.setName(value);
+                    }
+                    break;
                 default:
                     break;
             }
         }
-        return segment;
+    }
+
+    private static boolean isImageFileSegment(CqImageSegment segment) {
+        return hasImageExtension(segment.getName())
+                || hasImageExtension(segment.getFile())
+                || hasImageExtension(segment.getUrl());
+    }
+
+    private static boolean hasImageExtension(String path) {
+        if (path == null || path.isEmpty()) {
+            return false;
+        }
+        String name = path;
+        int query = name.indexOf('?');
+        if (query >= 0) {
+            name = name.substring(0, query);
+        }
+        int slash = Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\'));
+        if (slash >= 0) {
+            name = name.substring(slash + 1);
+        }
+        int dot = name.lastIndexOf('.');
+        if (dot < 0 || dot == name.length() - 1) {
+            return false;
+        }
+        return IMAGE_EXT.contains(name.substring(dot).toLowerCase(Locale.ROOT));
     }
 
     /**
      * 单张图片 CQ 参数。
      * <p>
-     * go-cqhttp 上报通常同时带 file 与 url；优先用 url 下载，否则通过 get_image(file) 解析。
+     * go-cqhttp 上报通常同时带 file 与 url；优先用 url 下载，否则通过 get_image / get_file 解析。
      */
     @lombok.Data
     public static class CqImageSegment {
@@ -76,5 +128,13 @@ public final class CqImageParser {
         private String file;
         /** 可下载地址，或 file:/// 本地路径 */
         private String url;
+        /**
+         * CQ:file 的 name 字段（原始文件名）
+         */
+        private String name;
+        /**
+         * 是否来自 [CQ:file]（下载时优先 get_file）
+         */
+        private boolean fileUpload;
     }
 }

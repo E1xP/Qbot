@@ -84,6 +84,13 @@ public class GroupModerationService {
     }
 
     private static String segmentFileName(CqImageParser.CqImageSegment segment) {
+        return segmentDisplayName(segment);
+    }
+
+    private static String segmentDisplayName(CqImageParser.CqImageSegment segment) {
+        if (segment.getName() != null && !segment.getName().isEmpty()) {
+            return segment.getName();
+        }
         if (segment.getFile() != null && !segment.getFile().isEmpty()) {
             return segment.getFile();
         }
@@ -168,12 +175,12 @@ public class GroupModerationService {
                 if (groupConfig.isSaveEnable() && hit.imageBytes != null) {
                     savedFiles.add(imageStorageService.save(
                             task.getGroupId(), task.getUserId(), task.getMessageId(), hit.imageBytes,
-                            segment.getFile(), segment.getUrl()));
+                            segmentDisplayName(segment), segment.getUrl()));
                 }
                 if (notifyImage == null && hit.imageBytes != null) {
                     notifyImage = !savedFiles.isEmpty()
                             ? savedFiles.get(savedFiles.size() - 1)
-                            : imageStorageService.saveToTemp(hit.imageBytes, segment.getFile(), segment.getUrl());
+                            : imageStorageService.saveToTemp(hit.imageBytes, segmentDisplayName(segment), segment.getUrl());
                 }
             } catch (Exception e) {
                 log.error("群审单图异常 messageId={}", task.getMessageId(), e);
