@@ -12,18 +12,17 @@ import javax.annotation.Resource;
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.Optional;
 
 /**
- * 从 CQ 图片段获取原始图片字节：优先 url，其次 file 本地路径，最后 OneBot get_image API。
+ * 从 CQ 图片段获取原始字节。
+ * <p>
+ * 拉取顺序：segment.url（http/file/本地路径）→ segment.file 本地路径 → OneBot API
+ *（{@code [CQ:file]} 上传优先 {@code get_file}，否则 {@code get_image}）。
  */
 @Service
 @Slf4j
 public class ImageFetchService {
-
-    private static final Set<String> ALLOWED_IMAGE_EXT = new HashSet<>(Arrays.asList(
-            ".jpg", ".jpeg", ".jfif", ".png", ".gif", ".webp", ".bmp"
-    ));
 
     @Resource
     private RestTemplate restTemplate;
@@ -32,9 +31,9 @@ public class ImageFetchService {
      * 根据 CQ file/url 或文件头推断扩展名，用于落盘文件名
      */
     public static String guessSuffix(byte[] bytes, String fileHint, String urlHint) {
-        String fromPath = extractSuffixFromPath(fileHint);
+        String fromPath = CqImageParser.extractImageSuffix(fileHint);
         if (fromPath == null) {
-            fromPath = extractSuffixFromPath(urlHint);
+            fromPath = CqImageParser.extractImageSuffix(urlHint);
         }
         if (fromPath != null) {
             return fromPath;
@@ -47,30 +46,6 @@ public class ImageFetchService {
      */
     public static String guessSuffix(byte[] bytes) {
         return guessSuffix(bytes, null, null);
-    }
-
-    private static String extractSuffixFromPath(String path) {
-        if (path == null || path.isEmpty()) {
-            return null;
-        }
-        String name = path;
-        int query = name.indexOf('?');
-        if (query >= 0) {
-            name = name.substring(0, query);
-        }
-        int slash = Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\'));
-        if (slash >= 0) {
-            name = name.substring(slash + 1);
-        }
-        int dot = name.lastIndexOf('.');
-        if (dot < 0 || dot == name.length() - 1) {
-            return null;
-        }
-        String ext = name.substring(dot).toLowerCase(Locale.ROOT);
-        if (!ALLOWED_IMAGE_EXT.contains(ext)) {
-            return null;
-        }
-        return ext;
     }
 
     private static String guessSuffixByMagic(byte[] bytes) {

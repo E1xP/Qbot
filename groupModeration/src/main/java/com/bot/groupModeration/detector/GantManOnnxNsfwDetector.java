@@ -24,8 +24,9 @@ import java.util.Map;
 /**
  * 基于 ONNX Runtime 的 GantMan/nsfw_model 五分类推理。
  * <p>
- * 模型来源：内置 classpath（{@code model-variant: 224|299}）或可选外部 {@code model-path}。
- * 输入为 NHWC、shape [1, H, H, 3]、RGB 像素除以 255。
+ * 模型：内置 classpath（{@code model-variant: 224|299}）或外部 {@code model-path}。
+ * 输入 NHWC {@code [1, H, H, 3]}，RGB 像素归一化至 [0,1]。
+ * 输出五类概率见 {@link NsfwPrediction#LABELS}，是否违规由 {@link NsfwPrediction#evaluateAgainst(double)} 判定。
  */
 @Component
 @Slf4j
@@ -39,6 +40,9 @@ public class GantManOnnxNsfwDetector {
     private OrtEnvironment environment;
     private OrtSession session;
     private String inputName;
+    /**
+     * 模型与会话是否可用；false 时 {@link com.bot.groupModeration.service.GroupModerationService} 不会入队。
+     */
     private boolean ready;
     private int inputSize;
 

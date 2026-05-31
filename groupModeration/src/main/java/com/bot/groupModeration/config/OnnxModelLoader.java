@@ -17,6 +17,11 @@ import java.nio.file.StandardCopyOption;
 @Slf4j
 public class OnnxModelLoader {
 
+    /**
+     * 解析 ONNX 模型：外部 {@code model-path} 优先，否则从 classpath 解压到临时文件。
+     *
+     * @return 不可用（文件缺失或解压失败）时返回 null
+     */
     public ResolvedModel resolve(GroupModerationConfig config) {
         OnnxModelVariant variant = OnnxModelVariant.from(config.getModelVariant());
         int inputSize = config.getModelInputSize() > 0 ? config.getModelInputSize() : variant.getInputSize();
@@ -58,6 +63,9 @@ public class OnnxModelLoader {
         }
     }
 
+    /**
+     * {@link #resolve} 成功后的模型路径与输入尺寸。
+     */
     @Value
     public static class ResolvedModel {
         File modelFile;

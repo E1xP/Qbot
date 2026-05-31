@@ -20,9 +20,9 @@ import java.io.File;
 import java.util.List;
 
 /**
- * 命中后的处置动作：豁免判断、禁言、撤回、告警群通知。
+ * 命中后的处置：白名单、撤回、禁言、告警群通知。
  * <p>
- * 告警图片通过合并转发节点发送，不在普通消息中直接附带 CQ:image。
+ * 告警正文发文字消息；违规图通过合并转发节点发送，避免在普通消息里直接 {@code [CQ:image]}。
  */
 @Service
 @Slf4j
@@ -83,28 +83,30 @@ public class ModerationActionService {
     }
 
     /**
-     * 撤回整条群消息（delete_msg），成功返回 true
+     * 撤回整条群消息（{@code delete_msg}）。
+     *
+     * @param savedImageName 日志用，持久化相对路径 {@code 群号/日期/文件名}，未保存时为 {@code "-"}
      */
     public boolean recall(CoolQ cq, int messageId, long groupId, long userId, String nickname,
-                          TriggerResult trigger, String allScores) {
+                          TriggerResult trigger, String allScores, String savedImageName) {
         try {
             ApiRawData result = cq.deleteMsg(messageId);
             boolean ok = result != null && result.getRetcode() == 0;
             if (ok) {
-                log.info("群审已撤回 groupId={} messageId={} userId={} nickname={} trigger={} score={} scores={} retcode={}",
-                        groupId, messageId, userId, nickname, trigger.getLabel(),
+                log.info("群审已撤回 groupId={} messageId={} userId={} nickname={} savedImage={} trigger={} score={} scores={} retcode={}",
+                        groupId, messageId, userId, nickname, savedImageName, trigger.getLabel(),
                         String.format("%.3f", trigger.getScore()), allScores,
                         result == null ? null : result.getRetcode());
             } else {
-                log.warn("群审撤回失败 groupId={} messageId={} userId={} nickname={} trigger={} score={} scores={} retcode={}",
-                        groupId, messageId, userId, nickname, trigger.getLabel(),
+                log.warn("群审撤回失败 groupId={} messageId={} userId={} nickname={} savedImage={} trigger={} score={} scores={} retcode={}",
+                        groupId, messageId, userId, nickname, savedImageName, trigger.getLabel(),
                         String.format("%.3f", trigger.getScore()), allScores,
                         result == null ? null : result.getRetcode());
             }
             return ok;
         } catch (Exception e) {
-            log.warn("群审撤回异常 groupId={} messageId={} userId={} nickname={}",
-                    groupId, messageId, userId, nickname, e);
+            log.warn("群审撤回异常 groupId={} messageId={} userId={} nickname={} savedImage={}",
+                    groupId, messageId, userId, nickname, savedImageName, e);
             return false;
         }
     }
@@ -113,7 +115,7 @@ public class ModerationActionService {
      * 撤回失败时回复原消息，附带触发项与各分类置信度
      */
     public void replyRecallFailed(CoolQ cq, long groupId, int messageId,
-                                  TriggerResult trigger, String allScores) {
+                                  TriggerResult trigger, String allScores, String savedImageName) {
         StringBuilder message = new StringBuilder();
         message.append(CQCodeExtend.reply(messageId));
         message.append("【群审】消息撤回失败，请管理员手动处理\n");
@@ -125,9 +127,9 @@ public class ModerationActionService {
         }
         try {
             cq.sendGroupMsg(groupId, message.toString(), false);
-            log.info("撤回失败已回复提醒 groupId={} messageId={}", groupId, messageId);
+            log.info("撤回失败已回复提醒 groupId={} messageId={} savedImage={}", groupId, messageId, savedImageName);
         } catch (Exception e) {
-            log.warn("撤回失败回复提醒发送失败 groupId={} messageId={}", groupId, messageId, e);
+            log.warn("撤回失败回复提醒发送失败 groupId={} messageId={} savedImage={}", groupId, messageId, savedImageName, e);
         }
     }
 
@@ -137,18 +139,20 @@ public class ModerationActionService {
     public void ban(CoolQ cq, long groupId, long userId, long durationSeconds) {
         try {
             ApiRawData result = cq.setGroupBan(groupId, userId, durationSeconds);
-            log.info("禁言 groupId={} userId={} duration={}s retcode={}",
+            log.info("群审禁言 groupId={} userId={} duration={}s retcode={}",
                     groupId, userId, durationSeconds, result == null ? null : result.getRetcode());
         } catch (Exception e) {
-            log.warn("禁言失败 groupId={} userId={}", groupId, userId, e);
+            log.warn("群审禁言失败 groupId={} userId={}", groupId, userId, e);
         }
     }
 
     public void notifyGroup(CoolQ cq, GroupModerationItem groupConfig, long sourceGroupId,
                             long userId, String nickname, TriggerResult trigger, String allScores,
-                            File imageFile) {
+                            File imageFile, String savedImageName) {
         long targetGroupId = resolveNotifyGroupId(groupConfig);
         if (targetGroupId <= 0) {
+            log.warn("群审告警跳过 sourceGroupId={} messageId来源群 userId={} reason=no_notify_target",
+                    sourceGroupId, userId);
             return;
         }
         StringBuilder message = new StringBuilder();
@@ -175,9 +179,12 @@ public class ModerationActionService {
             if (imageFile != null && imageFile.isFile()) {
                 sendNotifyForward(cq, targetGroupId, userId, nickname, trigger, allScores, imageFile);
             }
-            log.info("已通知群 {} 审核告警", targetGroupId);
+            log.info("群审已告警 sourceGroupId={} targetGroupId={} userId={} nickname={} savedImage={} trigger={} score={}",
+                    sourceGroupId, targetGroupId, userId, nickname, savedImageName,
+                    trigger.getLabel(), String.format("%.3f", trigger.getScore()));
         } catch (Exception e) {
-            log.warn("通知群失败 targetGroupId={}", targetGroupId, e);
+            log.warn("群审告警失败 sourceGroupId={} targetGroupId={} userId={} savedImage={}",
+                    sourceGroupId, targetGroupId, userId, savedImageName, e);
         }
     }
 
@@ -209,8 +216,9 @@ public class ModerationActionService {
         messages.add(node);
 
         ApiData<?> result = cq.sendGroupForwardMsg(targetGroupId, messages);
-        log.info("告警合并转发 targetGroupId={} retcode={}",
-                targetGroupId, result == null ? null : result.getRetcode());
+        log.info("群审告警合并转发 targetGroupId={} userId={} savedImage={} retcode={}",
+                targetGroupId, userId, imageFile.getName(),
+                result == null ? null : result.getRetcode());
     }
 
     /**

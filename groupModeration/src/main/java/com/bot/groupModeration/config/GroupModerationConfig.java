@@ -11,7 +11,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 群审模块总配置，绑定 application-groupModeration.yml 中 group-moderation 前缀。
+ * 群审模块总配置，绑定 {@code application-groupModeration.yml} 中 {@code group-moderation} 前缀。
+ * <p>
+ * {@link #findGroup(long)} 仅返回 {@code groups} 中 {@code enable=true} 且群号匹配的项。
  */
 @Data
 @Configuration

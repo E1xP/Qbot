@@ -3,7 +3,9 @@ package com.bot.groupModeration.pojo;
 import lombok.Data;
 
 /**
- * 置信度规则评估结果：是否命中、命中哪条规则及对应分数。
+ * 规则评估结果：是否触发处置及用于日志/告警的分数与阈值。
+ * <p>
+ * 当前唯一触发标签为 {@code nsfw_ratio}（见 {@link NsfwPrediction#evaluateAgainst(double)}）。
  */
 @Data
 public class TriggerResult {

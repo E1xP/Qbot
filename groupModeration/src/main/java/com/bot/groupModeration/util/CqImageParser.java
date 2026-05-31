@@ -7,14 +7,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 从群消息解析可审核图片：{@code [CQ:image,...]} 与图片类型的 {@code [CQ:file,...]}。
+ * 从群消息解析可审核图片段。
+ * <p>
+ * 支持 {@code [CQ:image,...]} 与扩展名属于图片类型的 {@code [CQ:file,...]}（依据 name/file/url 后缀判断）。
+ * {@link CqImageSegment#fileUpload} 为 true 时，拉取阶段优先走 {@code get_file} API。
  */
 public final class CqImageParser {
 
     private static final Pattern CQ_IMAGE = Pattern.compile("\\[CQ:image([^\\]]*)]", Pattern.CASE_INSENSITIVE);
     private static final Pattern CQ_FILE = Pattern.compile("\\[CQ:file([^\\]]*)]", Pattern.CASE_INSENSITIVE);
 
-    private static final Set<String> IMAGE_EXT = new HashSet<>(Arrays.asList(
+    private static final Set<String> IMAGE_EXTENSIONS = new HashSet<>(Arrays.asList(
             ".jpg", ".jpeg", ".jfif", ".png", ".gif", ".webp", ".bmp"
     ));
 
@@ -92,14 +95,24 @@ public final class CqImageParser {
     }
 
     private static boolean isImageFileSegment(CqImageSegment segment) {
-        return hasImageExtension(segment.getName())
-                || hasImageExtension(segment.getFile())
-                || hasImageExtension(segment.getUrl());
+        return hasImagePath(segment.getName())
+                || hasImagePath(segment.getFile())
+                || hasImagePath(segment.getUrl());
     }
 
-    private static boolean hasImageExtension(String path) {
+    /**
+     * 路径/URL 是否指向可审核图片（按 basename 扩展名判断）。
+     */
+    public static boolean hasImagePath(String path) {
+        return extractImageSuffix(path) != null;
+    }
+
+    /**
+     * 从路径或 URL 提取小写扩展名（含点），非图片类型返回 null。
+     */
+    public static String extractImageSuffix(String path) {
         if (path == null || path.isEmpty()) {
-            return false;
+            return null;
         }
         String name = path;
         int query = name.indexOf('?');
@@ -112,9 +125,10 @@ public final class CqImageParser {
         }
         int dot = name.lastIndexOf('.');
         if (dot < 0 || dot == name.length() - 1) {
-            return false;
+            return null;
         }
-        return IMAGE_EXT.contains(name.substring(dot).toLowerCase(Locale.ROOT));
+        String ext = name.substring(dot).toLowerCase(Locale.ROOT);
+        return IMAGE_EXTENSIONS.contains(ext) ? ext : null;
     }
 
     /**

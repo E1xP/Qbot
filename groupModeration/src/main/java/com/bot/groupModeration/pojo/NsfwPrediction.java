@@ -6,7 +6,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * ONNX 模型单次推理结果（GantMan 五分类概率）。
+ * ONNX 模型单次推理结果（GantMan 五分类 softmax 概率）。
+ * <p>
+ * 加权 NSFW 比例：分子 = hentai+porn+sexy 的 Σ(概率×权重)，分母 = 五类 Σ(概率×权重)，
+ * 权重见静态块 {@link #WEIGHTS}。
  */
 @Data
 public class NsfwPrediction {
@@ -78,5 +81,18 @@ public class NsfwPrediction {
             }
         }
         return sb.toString();
+    }
+
+    private static final String NSFW_RATIO_LABEL = "nsfw_ratio";
+
+    /**
+     * 与群配置的 {@code nsfw-ratio-threshold} 比较，判定是否命中处置。
+     */
+    public TriggerResult evaluateAgainst(double threshold) {
+        float ratio = getNsfwRatio();
+        if (ratio >= threshold) {
+            return TriggerResult.of(NSFW_RATIO_LABEL, ratio, threshold);
+        }
+        return TriggerResult.notTriggered();
     }
 }

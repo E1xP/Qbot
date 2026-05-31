@@ -3,6 +3,9 @@
 # 模型：GantMan/nsfw_model 转 ONNX，五分类 drawings/hentai/neutral/porn/sexy
 # 内置模型位于 src/main/resources/（打包进 jar）
 # =============================================================================
+logging:
+  level:
+    com.bot.groupModeration: info
 group-moderation:
   enable: false
   # 内置模型选择：224（MobileNet，较快）或 299（Inception，较慢）

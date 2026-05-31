@@ -7,7 +7,9 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * 待审核任务：入队时快照消息 ID 与图片 CQ 参数，消费线程顺序推理后再决定是否撤回。
+ * 待审核任务快照：入队时固定 messageId、群号、发送者与 CQ 图片段列表，供 worker 顺序消费。
+ * <p>
+ * 命中后按 {@link #messageId} 撤回整条消息（非单张 CQ 段）。
  */
 @Data
 @Builder
