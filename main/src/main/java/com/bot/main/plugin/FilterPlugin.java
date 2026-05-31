@@ -2,6 +2,7 @@ package com.bot.main.plugin;
 
 import com.bot.event.message.CQGroupMessageEvent;
 import com.bot.event.message.CQPrivateMessageEvent;
+import com.bot.groupModeration.util.CqImageParser;
 import com.bot.main.config.BotConfig;
 import com.bot.robot.CQPlugin;
 import com.bot.robot.CoolQ;
@@ -45,12 +46,16 @@ public class FilterPlugin extends CQPlugin {
 
     @Override
     public int onGroupMessage(CoolQ cq, CQGroupMessageEvent event) {
-        if (replyGroupFlag && event.getMessage().trim().startsWith("./")) {
-            //开启信息回复且为指令
+        String message = event.getMessage();
+        if (replyGroupFlag && message != null && message.trim().startsWith("./")) {
+            // 开启信息回复且为指令
             return MESSAGE_IGNORE;
-        } else {
-            //关闭消息回复或非指令
-            return MESSAGE_BLOCK;
         }
+        if (CqImageParser.hasImage(message)) {
+            // 含图片消息放行，供后续 GroupModerationPlugin 审核
+            return MESSAGE_IGNORE;
+        }
+        // 关闭消息回复或非指令
+        return MESSAGE_BLOCK;
     }
 }

@@ -25,9 +25,7 @@ public final class CqImageParser {
         return message != null && CQ_IMAGE.matcher(message).find();
     }
 
-    /**
-     * 解析消息中全部图片段（一条消息可含多张图）
-     */
+    /** 解析消息中全部图片段（一条消息可含多张图） */
     public static List<CqImageSegment> parseAll(String message) {
         if (message == null) {
             return Collections.emptyList();
@@ -74,13 +72,9 @@ public final class CqImageParser {
      */
     @lombok.Data
     public static class CqImageSegment {
-        /**
-         * CQ 码中的 file 字段（缓存文件名或 URL）
-         */
+        /** CQ 码中的 file 字段（缓存文件名或 URL） */
         private String file;
-        /**
-         * 可下载地址，或 file:/// 本地路径
-         */
+        /** 可下载地址，或 file:/// 本地路径 */
         private String url;
     }
 }

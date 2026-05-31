@@ -5,4 +5,4 @@
 配置见 `application-groupModeration.yml`。内置模型：`nsfw_mobilenet2_224x224.onnx`（224）、`nsfw_inception_v3_299x299.onnx`
 （299）。
 
-插件须注册在 `FilterPlugin` 之前。
+插件须注册在 `FilterPlugin` 之后；`FilterPlugin` 会对含 `[CQ:image]` 的消息放行。
