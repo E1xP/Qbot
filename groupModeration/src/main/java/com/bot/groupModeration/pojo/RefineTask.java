@@ -18,6 +18,9 @@ public class RefineTask {
     private int messageId;
     private long groupId;
     private long userId;
+    /**
+     * 群内展示名：群名片优先，无名片时用 QQ 昵称
+     */
     private String senderNickname;
 
     @Builder.Default

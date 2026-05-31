@@ -10,6 +10,7 @@ import com.bot.groupModeration.detector.NudeNetOnnxDetector;
 import com.bot.groupModeration.pojo.*;
 import com.bot.groupModeration.util.CqImageParser;
 import com.bot.robot.CoolQ;
+import com.bot.utils.GroupUserNames;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -93,7 +94,7 @@ public class GroupModerationService {
                 " | groupId=" + task.getGroupId() +
                 " | messageId=" + task.getMessageId() +
                 " | userId=" + task.getUserId() +
-                " | nickname=" + task.getSenderNickname() +
+                " | senderName=" + task.getSenderNickname() +
                 " | file=" + fileName;
         log.info(msg);
     }
@@ -116,7 +117,7 @@ public class GroupModerationService {
                 .append(" | groupId=").append(task.getGroupId())
                 .append(" | messageId=").append(task.getMessageId())
                 .append(" | userId=").append(task.getUserId())
-                .append(" | nickname=").append(task.getSenderNickname())
+                .append(" | senderName=").append(task.getSenderNickname())
                 .append(" | file=").append(fileName);
         log.info(msg.toString());
     }
@@ -282,7 +283,7 @@ public class GroupModerationService {
                 .messageId(event.getMessageId())
                 .groupId(event.getGroupId())
                 .userId(event.getUserId())
-                .senderNickname(sender != null ? sender.getNickname() : null)
+                .senderNickname(GroupUserNames.displayName(sender))
                 .imageSegments(segments)
                 .enqueuedAt(System.currentTimeMillis())
                 .build();

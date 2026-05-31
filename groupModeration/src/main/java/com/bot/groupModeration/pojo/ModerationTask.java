@@ -29,7 +29,7 @@ public class ModerationTask {
     private long userId;
 
     /**
-     * 发送者昵称（告警文案）
+     * 群内展示名：群名片优先，无名片时用 QQ 昵称（日志与告警文案）
      */
     private String senderNickname;
 

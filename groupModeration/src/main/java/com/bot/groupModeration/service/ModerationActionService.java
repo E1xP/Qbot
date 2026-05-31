@@ -89,26 +89,26 @@ public class ModerationActionService {
      *
      * @param savedImageName 日志用，持久化相对路径 {@code 群号/日期/文件名}，未保存时为 {@code "-"}
      */
-    public boolean recall(CoolQ cq, int messageId, long groupId, long userId, String nickname,
+    public boolean recall(CoolQ cq, int messageId, long groupId, long userId, String senderName,
                           TriggerResult trigger, String allScores, String savedImageName) {
         try {
             ApiRawData result = cq.deleteMsg(messageId);
             boolean ok = result != null && result.getRetcode() == 0;
             if (ok) {
-                log.info("群审已撤回 groupId={} messageId={} userId={} nickname={} savedImage={} trigger={} score={} scores={} retcode={}",
-                        groupId, messageId, userId, nickname, savedImageName, trigger.getLabel(),
+                log.info("群审已撤回 groupId={} messageId={} userId={} senderName={} savedImage={} trigger={} score={} scores={} retcode={}",
+                        groupId, messageId, userId, senderName, savedImageName, trigger.getLabel(),
                         String.format("%.3f", trigger.getScore()), allScores,
                         result == null ? null : result.getRetcode());
             } else {
-                log.warn("群审撤回失败 groupId={} messageId={} userId={} nickname={} savedImage={} trigger={} score={} scores={} retcode={}",
-                        groupId, messageId, userId, nickname, savedImageName, trigger.getLabel(),
+                log.warn("群审撤回失败 groupId={} messageId={} userId={} senderName={} savedImage={} trigger={} score={} scores={} retcode={}",
+                        groupId, messageId, userId, senderName, savedImageName, trigger.getLabel(),
                         String.format("%.3f", trigger.getScore()), allScores,
                         result == null ? null : result.getRetcode());
             }
             return ok;
         } catch (Exception e) {
-            log.warn("群审撤回异常 groupId={} messageId={} userId={} nickname={} savedImage={}",
-                    groupId, messageId, userId, nickname, savedImageName, e);
+            log.warn("群审撤回异常 groupId={} messageId={} userId={} senderName={} savedImage={}",
+                    groupId, messageId, userId, senderName, savedImageName, e);
             return false;
         }
     }
@@ -149,7 +149,7 @@ public class ModerationActionService {
     }
 
     public void notifyGroup(CoolQ cq, GroupModerationItem groupConfig, long sourceGroupId,
-                            long userId, String nickname, ModerationVerdict verdict,
+                            long userId, String senderName, ModerationVerdict verdict,
                             File imageFile, String savedImageName) {
         long targetGroupId = resolveNotifyGroupId(groupConfig);
         if (targetGroupId <= 0) {
@@ -164,7 +164,7 @@ public class ModerationActionService {
         message.append("【群审·精判告警】\n");
         message.append("来源群：").append(sourceGroupId).append("\n");
         if (userId > 0) {
-            message.append("发送人：").append(nickname != null ? nickname : "")
+            message.append("发送人：").append(senderName != null ? senderName : "")
                     .append("(").append(userId).append(")\n");
         }
         if (verdict != null) {
@@ -176,11 +176,11 @@ public class ModerationActionService {
         try {
             cq.sendGroupMsg(targetGroupId, message.toString(), false);
             if (imageFile != null && imageFile.isFile()) {
-                sendNotifyForward(cq, targetGroupId, userId, nickname, verdict, imageFile);
+                sendNotifyForward(cq, targetGroupId, userId, senderName, verdict, imageFile);
             }
             TriggerResult trigger = verdict != null ? verdict.getTrigger() : null;
-            log.info("群审已告警 sourceGroupId={} targetGroupId={} userId={} nickname={} savedImage={} trigger={} score={}",
-                    sourceGroupId, targetGroupId, userId, nickname, savedImageName,
+            log.info("群审已告警 sourceGroupId={} targetGroupId={} userId={} senderName={} savedImage={} trigger={} score={}",
+                    sourceGroupId, targetGroupId, userId, senderName, savedImageName,
                     trigger == null ? null : trigger.getLabel(),
                     trigger == null ? null : String.format("%.3f", trigger.getScore()));
         } catch (Exception e) {
@@ -192,9 +192,9 @@ public class ModerationActionService {
     /**
      * 以合并转发形式发送违规图片及精判详情
      */
-    private void sendNotifyForward(CoolQ cq, long targetGroupId, long userId, String nickname,
+    private void sendNotifyForward(CoolQ cq, long targetGroupId, long userId, String senderName,
                                    ModerationVerdict verdict, File imageFile) {
-        String senderName = nickname != null && !nickname.isEmpty() ? nickname : "违规发送者";
+        String forwardSenderName = senderName != null && !senderName.isEmpty() ? senderName : "违规发送者";
         String senderUin = userId > 0 ? String.valueOf(userId) : String.valueOf(cq.getSelfId());
 
         StringBuilder detail = new StringBuilder("【违规内容·精判】\n");
@@ -210,7 +210,7 @@ public class ModerationActionService {
         content.add(imageSegment(imageFile));
 
         JSONObject data = new JSONObject();
-        data.put("name", senderName);
+        data.put("name", forwardSenderName);
         data.put("uin", senderUin);
         data.put("content", content);
 
