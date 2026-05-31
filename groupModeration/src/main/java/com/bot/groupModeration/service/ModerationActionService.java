@@ -85,15 +85,26 @@ public class ModerationActionService {
     /**
      * 撤回整条群消息（delete_msg），成功返回 true
      */
-    public boolean recall(CoolQ cq, int messageId) {
+    public boolean recall(CoolQ cq, int messageId, long groupId, long userId, String nickname,
+                          TriggerResult trigger, String allScores) {
         try {
             ApiRawData result = cq.deleteMsg(messageId);
             boolean ok = result != null && result.getRetcode() == 0;
-            log.info("撤回消息 messageId={} retcode={} ok={}",
-                    messageId, result == null ? null : result.getRetcode(), ok);
+            if (ok) {
+                log.info("群审已撤回 groupId={} messageId={} userId={} nickname={} trigger={} score={} scores={} retcode={}",
+                        groupId, messageId, userId, nickname, trigger.getLabel(),
+                        String.format("%.3f", trigger.getScore()), allScores,
+                        result == null ? null : result.getRetcode());
+            } else {
+                log.warn("群审撤回失败 groupId={} messageId={} userId={} nickname={} trigger={} score={} scores={} retcode={}",
+                        groupId, messageId, userId, nickname, trigger.getLabel(),
+                        String.format("%.3f", trigger.getScore()), allScores,
+                        result == null ? null : result.getRetcode());
+            }
             return ok;
         } catch (Exception e) {
-            log.warn("撤回消息失败 messageId={}", messageId, e);
+            log.warn("群审撤回异常 groupId={} messageId={} userId={} nickname={}",
+                    groupId, messageId, userId, nickname, e);
             return false;
         }
     }

@@ -139,9 +139,14 @@ public class GroupModerationService {
 
         if (!queue.offer(task)) {
             log.warn("群审队列已满，丢弃 messageId={} groupId={}", task.getMessageId(), task.getGroupId());
-            return;
         }
-        log.info("群审已入队 messageId={} groupId={} images={}", task.getMessageId(), task.getGroupId(), segments.size());
+    }
+
+    private static void logRecognition(ModerationTask task, String fileName, String scores,
+                                       float nsfwRatio, boolean triggered, boolean cache) {
+        log.info("群审识别 groupId={} messageId={} userId={} nickname={} file={} scores={} nsfw_ratio={} triggered={} cache={}",
+                task.getGroupId(), task.getMessageId(), task.getUserId(), task.getSenderNickname(),
+                fileName, scores, String.format("%.3f", nsfwRatio), triggered, cache);
     }
 
     private void processTask(ModerationTask task) {
@@ -164,7 +169,7 @@ public class GroupModerationService {
 
         for (CqImageParser.CqImageSegment segment : task.getImageSegments()) {
             try {
-                ImageHit hit = inspectImage(cq, task.getMessageId(), segment, groupConfig);
+                ImageHit hit = inspectImage(cq, task, segment, groupConfig);
                 if (!hit.trigger.isTriggered()) {
                     continue;
                 }
@@ -195,7 +200,9 @@ public class GroupModerationService {
                 task.getMessageId(), task.getGroupId(), bestTrigger.getLabel(), bestTrigger.getScore());
 
         if (groupConfig.isRecallEnable()) {
-            boolean recalled = moderationActionService.recall(cq, task.getMessageId());
+            boolean recalled = moderationActionService.recall(
+                    cq, task.getMessageId(), task.getGroupId(), task.getUserId(), task.getSenderNickname(),
+                    bestTrigger, bestScores);
             if (!recalled) {
                 moderationActionService.replyRecallFailed(
                         cq, task.getGroupId(), task.getMessageId(), bestTrigger, bestScores);
@@ -215,20 +222,20 @@ public class GroupModerationService {
         }
     }
 
-    private ImageHit inspectImage(CoolQ cq, int messageId, CqImageParser.CqImageSegment segment,
+    private ImageHit inspectImage(CoolQ cq, ModerationTask task, CqImageParser.CqImageSegment segment,
                                   GroupModerationItem groupConfig) throws Exception {
         String fileName = segmentFileName(segment);
         byte[] imageBytes = imageFetchService.fetch(cq, segment).orElse(null);
         if (imageBytes == null || imageBytes.length == 0) {
-            log.warn("群审检测失败 messageId={} file={} reason=fetch_empty", messageId, fileName);
+            log.warn("群审识别失败 groupId={} messageId={} userId={} nickname={} file={} reason=fetch_empty",
+                    task.getGroupId(), task.getMessageId(), task.getUserId(), task.getSenderNickname(), fileName);
             return ImageHit.pass();
         }
 
         String cacheKey = sha256(imageBytes);
         CachedHit cached = recentCache.get(cacheKey);
         if (cached != null) {
-            log.info("群审检测 messageId={} file={} scores={} triggered={} cache=true",
-                    messageId, fileName, cached.scores, cached.trigger.isTriggered());
+            logRecognition(task, fileName, cached.scores, cached.nsfwRatio, cached.trigger.isTriggered(), true);
             return cached.trigger.isTriggered()
                     ? new ImageHit(cached.trigger, cached.scores, imageBytes)
                     : ImageHit.pass();
@@ -237,22 +244,24 @@ public class GroupModerationService {
         NsfwPrediction prediction = nsfwDetector.predict(imageBytes);
         TriggerResult trigger = confidenceTriggerService.evaluate(prediction, groupConfig);
         String scores = prediction.formatTopScores();
-        log.info("群审检测 messageId={} file={} scores={} nsfw_ratio={} triggered={}",
-                messageId, fileName, scores, String.format("%.3f", prediction.getNsfwRatio()), trigger.isTriggered());
+        float nsfwRatio = prediction.getNsfwRatio();
+        logRecognition(task, fileName, scores, nsfwRatio, trigger.isTriggered(), false);
         if (!trigger.isTriggered()) {
             return ImageHit.pass();
         }
-        recentCache.put(cacheKey, new CachedHit(trigger, scores));
+        recentCache.put(cacheKey, new CachedHit(trigger, scores, nsfwRatio));
         return new ImageHit(trigger, scores, imageBytes);
     }
 
     private static class CachedHit {
         final TriggerResult trigger;
         final String scores;
+        final float nsfwRatio;
 
-        CachedHit(TriggerResult trigger, String scores) {
+        CachedHit(TriggerResult trigger, String scores, float nsfwRatio) {
             this.trigger = trigger;
             this.scores = scores;
+            this.nsfwRatio = nsfwRatio;
         }
     }
 
