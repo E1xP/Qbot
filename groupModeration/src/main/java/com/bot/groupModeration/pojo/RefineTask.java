@@ -15,7 +15,7 @@ import java.util.List;
 public class RefineTask {
 
     private long selfId;
-    private long messageId;
+    private int messageId;
     private long groupId;
     private long userId;
     private String senderNickname;

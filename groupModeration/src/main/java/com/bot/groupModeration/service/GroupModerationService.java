@@ -208,7 +208,20 @@ public class GroupModerationService {
 
             Optional<ModerationVerdict> cached = cacheGet(imageBytes);
             if (cached.isPresent()) {
-                ModerationVerdict verdict = cached.get().withImageBytes(imageBytes);
+                ModerationVerdict cachedVerdict = cached.get();
+                if (cachedVerdict.isAwaitingRefine()) {
+                    log.info("群审初筛 cache=awaiting_refine groupId={} messageId={} file={} confidence={}% → 入精判队列",
+                            task.getGroupId(), task.getMessageId(), fileName,
+                            String.format(Locale.ROOT, "%.1f", cachedVerdict.getPrescreenConfidence()));
+                    pending.add(RefineTask.PendingImage.builder()
+                            .segment(segment)
+                            .imageBytes(imageBytes)
+                            .prescreenConfidence(cachedVerdict.getPrescreenConfidence())
+                            .prescreenScores(cachedVerdict.getPrescreenScores())
+                            .build());
+                    continue;
+                }
+                ModerationVerdict verdict = cachedVerdict.withImageBytes(imageBytes);
                 logVerdict(task, fileName, "prescreen", verdict, true);
                 done.add(new RefineTask.DoneImage(segment, verdict));
                 continue;
@@ -229,6 +242,7 @@ public class GroupModerationService {
             log.info("群审初筛过线 groupId={} messageId={} file={} confidence={}% → 入精判队列",
                     task.getGroupId(), task.getMessageId(), fileName,
                     String.format(Locale.ROOT, "%.1f", confidence));
+            cachePut(imageBytes, ModerationVerdict.prescreenAwaitRefine(scores, confidence, imageBytes));
             pending.add(RefineTask.PendingImage.builder()
                     .segment(segment)
                     .imageBytes(imageBytes)
@@ -252,8 +266,9 @@ public class GroupModerationService {
                 .prescreenDone(done)
                 .build();
         if (!refineQueue.offer(refineTask)) {
-            log.warn("精判队列已满，丢弃 messageId={} groupId={} pendingImages={}",
+            log.warn("精判队列已满，丢弃 messageId={} groupId={} pendingImages={}，对已确认命中图仍尝试处置",
                     task.getMessageId(), task.getGroupId(), pending.size());
+            applyActions(cq, task, groupConfig, done);
         }
     }
 
@@ -317,19 +332,29 @@ public class GroupModerationService {
             CqImageParser.CqImageSegment segment = item.getSegment();
             File savedFile = null;
             if (groupConfig.isSaveEnable() && verdict.getImageBytes() != null) {
-                savedFile = imageStorageService.save(
-                        task.getGroupId(), task.getUserId(), task.getMessageId(), verdict.getImageBytes(),
-                        CqImageParser.displayName(segment), segment.getUrl());
-                savedFiles.add(savedFile);
-                log.info("群审图片已保存 messageId={} groupId={} userId={} savedImage={}",
-                        task.getMessageId(), task.getGroupId(), task.getUserId(),
-                        formatSavedImageName(savedFile));
+                try {
+                    savedFile = imageStorageService.save(
+                            task.getGroupId(), task.getUserId(), task.getMessageId(), verdict.getImageBytes(),
+                            CqImageParser.displayName(segment), segment.getUrl());
+                    savedFiles.add(savedFile);
+                    log.info("群审图片已保存 messageId={} groupId={} userId={} savedImage={}",
+                            task.getMessageId(), task.getGroupId(), task.getUserId(),
+                            formatSavedImageName(savedFile));
+                } catch (Exception e) {
+                    log.warn("群审图片保存失败 messageId={} groupId={} userId={}",
+                            task.getMessageId(), task.getGroupId(), task.getUserId(), e);
+                }
             }
             if (notifyImage == null && verdict.getImageBytes() != null) {
-                notifyImage = savedFile != null
-                        ? savedFile
-                        : imageStorageService.saveToTemp(
-                        verdict.getImageBytes(), CqImageParser.displayName(segment), segment.getUrl());
+                try {
+                    notifyImage = savedFile != null
+                            ? savedFile
+                            : imageStorageService.saveToTemp(
+                            verdict.getImageBytes(), CqImageParser.displayName(segment), segment.getUrl());
+                } catch (Exception e) {
+                    log.warn("群审告警临时图保存失败 messageId={} groupId={}",
+                            task.getMessageId(), task.getGroupId(), e);
+                }
             }
             if (!bestTrigger.isTriggered() || verdict.getTrigger().getScore() > bestTrigger.getScore()) {
                 bestTrigger = verdict.getTrigger();

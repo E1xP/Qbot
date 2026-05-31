@@ -130,7 +130,11 @@ public class GantManOnnxNsfwDetector {
         if (!ready) {
             throw new IllegalStateException("ONNX 模型未就绪");
         }
-        float[] nhwc = preprocess(ImageIO.read(new ByteArrayInputStream(imageBytes)), inputSize);
+        BufferedImage source = ImageIO.read(new ByteArrayInputStream(imageBytes));
+        if (source == null) {
+            throw new IllegalArgumentException("无法解码图片");
+        }
+        float[] nhwc = preprocess(source, inputSize);
         long[] shape = new long[]{1, inputSize, inputSize, 3};
         try (OnnxTensor tensor = OnnxTensor.createTensor(environment, FloatBuffer.wrap(nhwc), shape);
              OrtSession.Result result = session.run(Map.of(inputName, tensor))) {

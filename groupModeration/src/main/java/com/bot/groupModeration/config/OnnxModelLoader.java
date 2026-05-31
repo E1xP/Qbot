@@ -49,7 +49,7 @@ public class OnnxModelLoader {
      * 解析 NudeNet 640m ONNX：外部 {@code nudenet.model-path} 优先，否则 classpath {@code nudenet_640m.onnx}。
      */
     public ResolvedFileModel resolveNudeNet(GroupModerationConfig config) {
-        NudeNetConfig nudeNet = config.getNudenet();
+        GroupModerationConfig.NudeNetConfig nudeNet = config.getNudenet();
         if (nudeNet == null || !nudeNet.isEnable()) {
             return null;
         }

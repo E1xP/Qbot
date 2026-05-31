@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -156,13 +157,8 @@ public class ModerationActionService {
             return;
         }
         StringBuilder message = new StringBuilder();
-        List<Long> atUsers = groupConfig.getNotifyAtUserIds();
-        if (atUsers != null) {
-            for (Long qq : atUsers) {
-                if (qq != null && qq > 0) {
-                    message.append(CQCode.at(qq));
-                }
-            }
+        for (Long qq : resolveNotifyAtUserIds(groupConfig)) {
+            message.append(CQCode.at(qq));
         }
         message.append("【群审告警】\n");
         message.append("来源群：").append(sourceGroupId).append("\n");
@@ -232,6 +228,28 @@ public class ModerationActionService {
             return config.getNotify().getTargetGroupId();
         }
         return 0;
+    }
+
+    /**
+     * 群级 notify-at-user-ids 优先，否则回退全局 notify.at-user-ids。
+     */
+    private List<Long> resolveNotifyAtUserIds(GroupModerationItem groupConfig) {
+        List<Long> source = groupConfig.getNotifyAtUserIds();
+        if (source == null || source.isEmpty()) {
+            if (config.getNotify() != null) {
+                source = config.getNotify().getAtUserIds();
+            }
+        }
+        if (source == null || source.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        List<Long> ids = new ArrayList<>();
+        for (Long qq : source) {
+            if (qq != null && qq > 0) {
+                ids.add(qq);
+            }
+        }
+        return ids;
     }
 
     /**
