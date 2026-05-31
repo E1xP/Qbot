@@ -380,23 +380,41 @@ public class NudeNetOnnxDetector {
         return ready;
     }
 
-    private static void appendDetectionHits(StringBuilder summary, List<NudeNetDetection> valid) {
+    private static String formatHits(List<NudeNetDetection> valid) {
         if (valid.isEmpty()) {
-            return;
+            return null;
         }
         List<NudeNetDetection> sorted = new ArrayList<>(valid);
         sorted.sort(Comparator.comparing(NudeNetDetection::getScore).reversed());
-        summary.append(", hits=");
+        StringBuilder hits = new StringBuilder();
         int limit = Math.min(8, sorted.size());
         for (int i = 0; i < limit; i++) {
             NudeNetDetection d = sorted.get(i);
             if (i > 0) {
-                summary.append(';');
+                hits.append(';');
             }
-            summary.append(d.getLabel()).append('=').append(format(d.getScore()));
+            hits.append(d.getLabel()).append('=').append(format(d.getScore()));
         }
         if (sorted.size() > limit) {
-            summary.append(";...(+").append(sorted.size() - limit).append(')');
+            hits.append(";...(+").append(sorted.size() - limit).append(')');
+        }
+        return hits.toString();
+    }
+
+    private static void appendAgg(StringBuilder aggs, String key, float value) {
+        if (value <= 0f) {
+            return;
+        }
+        if (aggs.length() > 0) {
+            aggs.append(';');
+        }
+        aggs.append(key).append('=').append(format(value));
+    }
+
+    private static void appendDetectionHits(StringBuilder summary, List<NudeNetDetection> valid) {
+        String hits = formatHits(valid);
+        if (hits != null) {
+            summary.append(", hits=").append(hits);
         }
     }
 
@@ -438,6 +456,8 @@ public class NudeNetOnnxDetector {
             }
         }
 
+        String hits = formatHits(valid);
+        StringBuilder aggs = new StringBuilder();
         StringBuilder summary = new StringBuilder();
         summary.append("boxes=").append(valid.size());
         appendDetectionHits(summary, valid);
@@ -445,11 +465,12 @@ public class NudeNetOnnxDetector {
         for (Map.Entry<String, Float> entry : LABEL_THRESHOLDS.entrySet()) {
             float agg = softOrScores(valid, entry.getKey());
             if (agg > 0f) {
+                appendAgg(aggs, entry.getKey() + "Agg", agg);
                 summary.append(", ").append(entry.getKey()).append("Agg=").append(format(agg));
             }
             if (agg >= entry.getValue()) {
                 summary.append(", ban=label");
-                return JudgeResult.ban(entry.getKey(), agg, entry.getValue(), summary.toString());
+                return JudgeResult.ban(entry.getKey(), agg, entry.getValue(), summary.toString(), hits, aggs.toString());
             }
         }
 
@@ -458,57 +479,64 @@ public class NudeNetOnnxDetector {
         float breastAgg = softOrWeighted(valid, true, false);
         float buttAgg = softOrWeighted(valid, false, true);
         if (breastAgg > 0f) {
+            appendAgg(aggs, "breastAgg", breastAgg);
             summary.append(", breastAgg=").append(format(breastAgg));
         }
         if (buttAgg > 0f) {
+            appendAgg(aggs, "buttAgg", buttAgg);
             summary.append(", buttAgg=").append(format(buttAgg));
         }
 
         if (hasBreast && !hasButt) {
             if (breastAgg >= BREAST_ONLY_THRESHOLD) {
                 summary.append(", ban=breast_only");
-                return JudgeResult.ban("BREAST", breastAgg, BREAST_ONLY_THRESHOLD, summary.toString());
+                return JudgeResult.ban("BREAST", breastAgg, BREAST_ONLY_THRESHOLD, summary.toString(), hits, aggs.toString());
             }
         } else if (hasButt && !hasBreast) {
             if (buttAgg >= BUTT_ONLY_THRESHOLD) {
                 summary.append(", ban=butt_only");
-                return JudgeResult.ban("BUTTOCKS", buttAgg, BUTT_ONLY_THRESHOLD, summary.toString());
+                return JudgeResult.ban("BUTTOCKS", buttAgg, BUTT_ONLY_THRESHOLD, summary.toString(), hits, aggs.toString());
             }
         } else if (hasBreast && hasButt) {
             float torso = breastAgg * BREAST_TORSO_WEIGHT + buttAgg * BUTT_TORSO_WEIGHT;
+            appendAgg(aggs, "torso", torso);
             summary.append(", torso=").append(format(torso));
             if (torso >= TORSO_COMBINED_THRESHOLD) {
                 summary.append(", ban=torso");
-                return JudgeResult.ban("TORSO", torso, TORSO_COMBINED_THRESHOLD, summary.toString());
+                return JudgeResult.ban("TORSO", torso, TORSO_COMBINED_THRESHOLD, summary.toString(), hits, aggs.toString());
             }
             if (breastAgg >= BREAST_ONLY_THRESHOLD) {
                 summary.append(", ban=breast_combo");
-                return JudgeResult.ban("BREAST", breastAgg, BREAST_ONLY_THRESHOLD, summary.toString());
+                return JudgeResult.ban("BREAST", breastAgg, BREAST_ONLY_THRESHOLD, summary.toString(), hits, aggs.toString());
             }
             if (buttAgg >= BUTT_ONLY_THRESHOLD) {
                 summary.append(", ban=butt_combo");
-                return JudgeResult.ban("BUTTOCKS", buttAgg, BUTT_ONLY_THRESHOLD, summary.toString());
+                return JudgeResult.ban("BUTTOCKS", buttAgg, BUTT_ONLY_THRESHOLD, summary.toString(), hits, aggs.toString());
             }
         }
 
-        return JudgeResult.pass(summary.toString());
+        return JudgeResult.pass(summary.toString(), hits, aggs.toString());
     }
 
     public static final class JudgeResult {
         private final TriggerResult trigger;
         private final String summary;
+        private final String hits;
+        private final String aggs;
 
-        private JudgeResult(TriggerResult trigger, String summary) {
+        private JudgeResult(TriggerResult trigger, String summary, String hits, String aggs) {
             this.trigger = trigger;
             this.summary = summary;
+            this.hits = hits;
+            this.aggs = aggs;
         }
 
-        static JudgeResult pass(String summary) {
-            return new JudgeResult(TriggerResult.notTriggered(), summary);
+        static JudgeResult pass(String summary, String hits, String aggs) {
+            return new JudgeResult(TriggerResult.notTriggered(), summary, hits, aggs);
         }
 
-        static JudgeResult ban(String reason, float score, float threshold, String summary) {
-            return new JudgeResult(TriggerResult.of("nudenet:" + reason, score, threshold), summary);
+        static JudgeResult ban(String reason, float score, float threshold, String summary, String hits, String aggs) {
+            return new JudgeResult(TriggerResult.of("nudenet:" + reason, score, threshold), summary, hits, aggs);
         }
 
         public TriggerResult getTrigger() {
@@ -517,6 +545,14 @@ public class NudeNetOnnxDetector {
 
         public String getSummary() {
             return summary;
+        }
+
+        public String getHits() {
+            return hits;
+        }
+
+        public String getAggs() {
+            return aggs;
         }
     }
 

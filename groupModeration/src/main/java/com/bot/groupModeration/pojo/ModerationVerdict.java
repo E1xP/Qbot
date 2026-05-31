@@ -18,26 +18,32 @@ public class ModerationVerdict {
     private final boolean awaitingRefine;
     private final boolean refined;
     private final String refineSummary;
+    private final String refineHits;
+    private final String refineAggs;
     private final TriggerResult trigger;
     private final byte[] imageBytes;
 
     private ModerationVerdict(float prescreenConfidence, String prescreenScores, boolean awaitingRefine,
-                              boolean refined, String refineSummary, TriggerResult trigger, byte[] imageBytes) {
+                              boolean refined, String refineSummary, String refineHits, String refineAggs,
+                              TriggerResult trigger, byte[] imageBytes) {
         this.prescreenConfidence = prescreenConfidence;
         this.prescreenScores = prescreenScores;
         this.awaitingRefine = awaitingRefine;
         this.refined = refined;
         this.refineSummary = refineSummary;
+        this.refineHits = refineHits;
+        this.refineAggs = refineAggs;
         this.trigger = trigger;
         this.imageBytes = imageBytes;
     }
 
     public static ModerationVerdict fetchFailed() {
-        return new ModerationVerdict(0f, null, false, false, null, TriggerResult.notTriggered(), null);
+        return new ModerationVerdict(0f, null, false, false, null, null, null,
+                TriggerResult.notTriggered(), null);
     }
 
     public static ModerationVerdict prescreenPass(String prescreenScores, float confidence, byte[] imageBytes) {
-        return new ModerationVerdict(confidence, prescreenScores, false, false, null,
+        return new ModerationVerdict(confidence, prescreenScores, false, false, null, null, null,
                 TriggerResult.notTriggered(), imageBytes);
     }
 
@@ -45,13 +51,15 @@ public class ModerationVerdict {
      * 初筛过线、待精判；写入 Cache 后重复消息可跳过 Inception。
      */
     public static ModerationVerdict prescreenAwaitRefine(String prescreenScores, float confidence, byte[] imageBytes) {
-        return new ModerationVerdict(confidence, prescreenScores, true, false, null,
+        return new ModerationVerdict(confidence, prescreenScores, true, false, null, null, null,
                 TriggerResult.notTriggered(), imageBytes);
     }
 
     public static ModerationVerdict of(String prescreenScores, float confidence, boolean refined,
-                                       String refineSummary, TriggerResult trigger, byte[] imageBytes) {
-        return new ModerationVerdict(confidence, prescreenScores, false, refined, refineSummary, trigger, imageBytes);
+                                       String refineSummary, String refineHits, String refineAggs,
+                                       TriggerResult trigger, byte[] imageBytes) {
+        return new ModerationVerdict(confidence, prescreenScores, false, refined, refineSummary,
+                refineHits, refineAggs, trigger, imageBytes);
     }
 
     public boolean isTriggered() {
@@ -104,14 +112,89 @@ public class ModerationVerdict {
         return sb.toString();
     }
 
+    private static String extractSummaryToken(String summary, String prefix) {
+        if (summary == null) {
+            return null;
+        }
+        int start = summary.indexOf(prefix);
+        if (start < 0) {
+            return null;
+        }
+        start += prefix.length();
+        int end = summary.indexOf(", ", start);
+        return end < 0 ? summary.substring(start) : summary.substring(start, end);
+    }
+
+    private static String extractAggsFromSummary(String summary) {
+        if (summary == null) {
+            return null;
+        }
+        StringBuilder aggs = new StringBuilder();
+        appendAggToken(aggs, summary, "Agg=");
+        appendAggToken(aggs, summary, "breastAgg=");
+        appendAggToken(aggs, summary, "buttAgg=");
+        appendAggToken(aggs, summary, "torso=");
+        return aggs.length() == 0 ? null : aggs.toString();
+    }
+
+    private static void appendAggToken(StringBuilder aggs, String summary, String token) {
+        int idx = 0;
+        while ((idx = summary.indexOf(token, idx)) >= 0) {
+            int keyStart = summary.lastIndexOf(", ", idx);
+            keyStart = keyStart < 0 ? 0 : keyStart + 2;
+            int valEnd = summary.indexOf(", ", idx);
+            if (valEnd < 0) {
+                valEnd = summary.length();
+            }
+            if (aggs.length() > 0) {
+                aggs.append(';');
+            }
+            aggs.append(summary, keyStart, valEnd);
+            idx = valEnd;
+        }
+    }
+
     /**
      * 写入缓存的副本（不含图片字节）
      */
     public ModerationVerdict withoutImageBytes() {
-        return new ModerationVerdict(prescreenConfidence, prescreenScores, awaitingRefine, refined, refineSummary, trigger, null);
+        return new ModerationVerdict(prescreenConfidence, prescreenScores, awaitingRefine, refined,
+                refineSummary, refineHits, refineAggs, trigger, null);
     }
 
     public ModerationVerdict withImageBytes(byte[] imageBytes) {
-        return new ModerationVerdict(prescreenConfidence, prescreenScores, awaitingRefine, refined, refineSummary, trigger, imageBytes);
+        return new ModerationVerdict(prescreenConfidence, prescreenScores, awaitingRefine, refined,
+                refineSummary, refineHits, refineAggs, trigger, imageBytes);
+    }
+
+    /**
+     * 日志用：各检测框 label=score
+     */
+    public String resolveRefineHitsForLog() {
+        if (refineHits != null) {
+            return refineHits;
+        }
+        return extractSummaryToken(refineSummary, "hits=");
+    }
+
+    /**
+     * 日志用：各聚合分
+     */
+    public String resolveRefineAggsForLog() {
+        if (refineAggs != null) {
+            return refineAggs;
+        }
+        return extractAggsFromSummary(refineSummary);
+    }
+
+    /**
+     * 日志用：精判触发部位（去掉 nudenet: 前缀）
+     */
+    public String resolveRefineTriggerPart() {
+        if (!isTriggered() || trigger == null || trigger.getLabel() == null) {
+            return null;
+        }
+        String label = trigger.getLabel();
+        return label.startsWith("nudenet:") ? label.substring("nudenet:".length()) : label;
     }
 }
