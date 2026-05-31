@@ -99,17 +99,53 @@ public class ModerationVerdict {
         return prescreenConfidence < thresholdPercent ? "放行" : "过线";
     }
 
+    private static String orDash(String value) {
+        return value == null || value.isEmpty() ? "无" : value;
+    }
+
     /**
-     * 撤回 / 告警用摘要
+     * 精判对外文案：触发部位 + 检测/聚合（告警、撤回失败等共用）。
+     *
+     * @param includeResult 是否包含「精判结论：违规/放行」行
+     */
+    public String refineActionText(boolean includeResult) {
+        if (!refined) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        if (includeResult) {
+            sb.append("精判结论：").append(resolveRefineLogResult()).append('\n');
+        }
+        if (isTriggered() && trigger != null) {
+            String part = resolveRefineTriggerPart();
+            if (part != null) {
+                sb.append("触发：").append(part).append(' ')
+                        .append(String.format(Locale.ROOT, "%.0f%%", trigger.getScore() * 100f))
+                        .append('\n');
+            }
+        }
+        sb.append("检测：").append(orDash(resolveRefineHitsForLog())).append('\n');
+        sb.append("聚合：").append(orDash(resolveRefineAggsForLog()));
+        return sb.toString();
+    }
+
+    /**
+     * 日志 / 撤回记录用精判摘要。
+     */
+    public String refineLogSummary() {
+        String text = refineActionText(true);
+        if (text != null) {
+            return text;
+        }
+        return "prescreen=" + String.format(Locale.ROOT, "%.1f", prescreenConfidence)
+                + "% scores=" + prescreenScores;
+    }
+
+    /**
+     * 处置日志用摘要（精判优先）。
      */
     public String actionSummary() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("prescreen=").append(String.format(Locale.ROOT, "%.1f", prescreenConfidence))
-                .append("% scores=").append(prescreenScores);
-        if (refined && refineSummary != null) {
-            sb.append(" refine=").append(refineSummary);
-        }
-        return sb.toString();
+        return refineLogSummary();
     }
 
     private static String extractSummaryToken(String summary, String prefix) {

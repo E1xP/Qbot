@@ -383,7 +383,7 @@ public class GroupModerationService {
     private void applyActions(CoolQ cq, ModerationTask task, GroupModerationItem groupConfig,
                               List<RefineTask.DoneImage> results) {
         TriggerResult bestTrigger = TriggerResult.notTriggered();
-        String bestScores = null;
+        ModerationVerdict bestVerdict = null;
         File notifyImage = null;
         File bestSavedImage = null;
         List<File> savedFiles = new ArrayList<>();
@@ -422,7 +422,7 @@ public class GroupModerationService {
             }
             if (!bestTrigger.isTriggered() || verdict.getTrigger().getScore() > bestTrigger.getScore()) {
                 bestTrigger = verdict.getTrigger();
-                bestScores = verdict.actionSummary();
+                bestVerdict = verdict;
                 bestSavedImage = savedFile;
             }
         }
@@ -434,10 +434,11 @@ public class GroupModerationService {
         if (groupConfig.isRecallEnable()) {
             boolean recalled = moderationActionService.recall(
                     cq, task.getMessageId(), task.getGroupId(), task.getUserId(), task.getSenderNickname(),
-                    bestTrigger, bestScores, formatSavedImageName(bestSavedImage));
+                    bestTrigger, bestVerdict != null ? bestVerdict.refineLogSummary() : "",
+                    formatSavedImageName(bestSavedImage));
             if (!recalled) {
                 moderationActionService.replyRecallFailed(
-                        cq, task.getGroupId(), task.getMessageId(), bestTrigger, bestScores,
+                        cq, task.getGroupId(), task.getMessageId(), bestVerdict,
                         formatSavedImageName(bestSavedImage));
             }
         }
@@ -448,8 +449,7 @@ public class GroupModerationService {
             File fileForNotify = notifyImage != null ? notifyImage : (savedFiles.isEmpty() ? null : savedFiles.get(0));
             moderationActionService.notifyGroup(
                     cq, groupConfig, task.getGroupId(), task.getUserId(), task.getSenderNickname(),
-                    bestTrigger, bestScores != null ? bestScores : "", fileForNotify,
-                    formatSavedImageName(bestSavedImage));
+                    bestVerdict, fileForNotify, formatSavedImageName(bestSavedImage));
             if (!groupConfig.isSaveEnable() && fileForNotify != null) {
                 fileForNotify.delete();
             }
