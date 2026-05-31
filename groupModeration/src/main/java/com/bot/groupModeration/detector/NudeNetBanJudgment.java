@@ -29,9 +29,9 @@ public final class NudeNetBanJudgment {
         RULES.put("FEMALE_BREAST_COVERED", new Rule(0.68f, 0.75f));
         RULES.put("BUTTOCKS_COVERED", new Rule(0.72f, 0.75f));
 
-        RULES.put("BELLY_EXPOSED", new Rule(0.85f));
+        RULES.put("BELLY_EXPOSED", new Rule(0.75f));
         RULES.put("FEMALE_GENITALIA_COVERED", new Rule(0.72f));
-        RULES.put("BELLY_COVERED", new Rule(0.90f));
+        RULES.put("BELLY_COVERED", new Rule(0.80f));
         RULES.put("ANUS_COVERED", new Rule(0.80f));
         RULES.put("ARMPITS_EXPOSED", new Rule(0.85f));
 
