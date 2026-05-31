@@ -132,6 +132,22 @@ public final class CqImageParser {
     }
 
     /**
+     * 日志 / 落盘用的展示名（name → file → url → "-"）。
+     */
+    public static String displayName(CqImageSegment segment) {
+        if (segment.getName() != null && !segment.getName().isEmpty()) {
+            return segment.getName();
+        }
+        if (segment.getFile() != null && !segment.getFile().isEmpty()) {
+            return segment.getFile();
+        }
+        if (segment.getUrl() != null && !segment.getUrl().isEmpty()) {
+            return segment.getUrl();
+        }
+        return "-";
+    }
+
+    /**
      * 单张图片 CQ 参数。
      * <p>
      * go-cqhttp 上报通常同时带 file 与 url；优先用 url 下载，否则通过 get_image / get_file 解析。

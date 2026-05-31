@@ -26,7 +26,7 @@ import java.util.Map;
  * <p>
  * 模型：内置 classpath（{@code model-variant: 224|299}）或外部 {@code model-path}。
  * 输入 NHWC {@code [1, H, H, 3]}，RGB 像素归一化至 [0,1]。
- * 输出五类概率见 {@link NsfwPrediction#LABELS}，是否违规由 {@link NsfwPrediction#evaluateAgainst(double)} 判定。
+ * 输出五类概率见 {@link NsfwPrediction#LABELS}，初筛置信度见 {@link NsfwPrediction#getConfidencePercent()}。
  */
 @Component
 @Slf4j

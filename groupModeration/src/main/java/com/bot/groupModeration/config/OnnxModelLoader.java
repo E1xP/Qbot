@@ -43,19 +43,51 @@ public class OnnxModelLoader {
         }
     }
 
+    private static final String NUDENET_CLASSPATH_RESOURCE = "nudenet_640m.onnx";
+
+    /**
+     * 解析 NudeNet 640m ONNX：外部 {@code nudenet.model-path} 优先，否则 classpath {@code nudenet_640m.onnx}。
+     */
+    public ResolvedFileModel resolveNudeNet(GroupModerationConfig config) {
+        NudeNetConfig nudeNet = config.getNudenet();
+        if (nudeNet == null || !nudeNet.isEnable()) {
+            return null;
+        }
+        int inputSize = nudeNet.getInputSize() > 0 ? nudeNet.getInputSize() : 640;
+
+        if (StringUtils.hasText(nudeNet.getModelPath())) {
+            File external = new File(nudeNet.getModelPath());
+            if (external.isFile()) {
+                return new ResolvedFileModel(external, inputSize, false);
+            }
+            log.warn("配置的 nudenet.model-path 不存在，将尝试内置模型: {}", external.getAbsolutePath());
+        }
+
+        try {
+            File classpathModel = materializeResource(NUDENET_CLASSPATH_RESOURCE, "qbot-nudenet", ".onnx");
+            return new ResolvedFileModel(classpathModel, inputSize, true);
+        } catch (Exception e) {
+            log.error("加载内置 NudeNet ONNX 失败 resource={}", NUDENET_CLASSPATH_RESOURCE, e);
+            return null;
+        }
+    }
+
     private File materializeClasspathModel(OnnxModelVariant variant) throws Exception {
         String resourcePath = variant.getClasspathResource();
+        String suffix = resourcePath.contains("299") ? "_299.onnx" : "_224.onnx";
+        return materializeResource(resourcePath, "qbot-nsfw", suffix);
+    }
+
+    private File materializeResource(String resourcePath, String tempPrefix, String tempSuffix) throws Exception {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
             cl = OnnxModelLoader.class.getClassLoader();
         }
         try (InputStream in = cl.getResourceAsStream(resourcePath)) {
             if (in == null) {
-                throw new IllegalStateException("classpath 中未找到模型: " + resourcePath
-                        + "，请将 ONNX 放入 groupModeration/src/main/resources/" + resourcePath);
+                throw new IllegalStateException("classpath 中未找到模型: " + resourcePath);
             }
-            String suffix = resourcePath.contains("299") ? "_299.onnx" : "_224.onnx";
-            File temp = File.createTempFile("qbot-nsfw", suffix);
+            File temp = File.createTempFile(tempPrefix, tempSuffix);
             temp.deleteOnExit();
             Files.copy(in, temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
             log.info("已从 classpath 释放内置模型: {} -> {}", resourcePath, temp.getAbsolutePath());
@@ -71,6 +103,13 @@ public class OnnxModelLoader {
         File modelFile;
         int inputSize;
         OnnxModelVariant variant;
+        boolean fromClasspath;
+    }
+
+    @Value
+    public static class ResolvedFileModel {
+        File modelFile;
+        int inputSize;
         boolean fromClasspath;
     }
 }

@@ -62,8 +62,18 @@ public class GroupModerationItem {
     private List<Long> exemptUserIds = new ArrayList<>();
 
     /**
-     * NSFW 比例阈值：分子=hentai+porn+sexy 的 Σ(p×w)，分母=五类 Σ(p×w)；
-     * 权重 drawings=100, hentai=95, neutral=100, porn=150, sexy=85。
+     * 初筛置信度阈值（百分比）。未配置时使用全局 {@code prescreen-threshold}（默认 60）。
+     * 兼容旧字段：若配置 0～1 的小数则自动 ×100。
      */
-    private double nsfwRatioThreshold = 0.85;
+    private double nsfwRatioThreshold = 0.60;
+
+    /**
+     * 本群初筛阈值（百分比）；≤0 时使用全局配置。
+     */
+    public double resolvePrescreenThresholdPercent(double globalThreshold) {
+        if (nsfwRatioThreshold <= 0) {
+            return globalThreshold;
+        }
+        return nsfwRatioThreshold <= 1d ? nsfwRatioThreshold * 100d : nsfwRatioThreshold;
+    }
 }

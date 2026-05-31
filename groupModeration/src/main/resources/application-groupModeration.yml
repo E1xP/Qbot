@@ -1,28 +1,29 @@
 # =============================================================================
 # 群图片本地审核模块（groupModeration）
-# 模型：GantMan/nsfw_model 转 ONNX，五分类 drawings/hentai/neutral/porn/sexy
-# 内置模型位于 src/main/resources/（打包进 jar）
+# 初筛：Inception NSFW ONNX（五分类）
+# 精判：NudeNet 640m ONNX（检测框 + 聚合规则）
 # =============================================================================
 logging:
   level:
     com.bot.groupModeration: info
 group-moderation:
   enable: false
-  # 内置模型选择：224（MobileNet，较快）或 299（Inception，较慢）
-  # 对应 resources/nsfw_mobilenet2_224x224.onnx 与 nsfw_inception_v3_299x299.onnx
+  # 初筛模型：299（Inception，推荐）
   model-variant: 299
-  # 可选：指定外部 ONNX 文件路径；非空且文件存在时覆盖内置模型
-  # model-path: D:/models/custom.onnx
-  # 可选：手动指定输入边长；为 0 时随 model-variant 自动为 224 或 299
   model-input-size: 299
-  # ONNX 推理线程（与队列单 worker 配合，建议 1）
+  # 初筛置信度阈值（百分比），≥ 此值进入 NudeNet 精判
+  prescreen-threshold: 60
   onnx-threads: 1
-  # 待审任务队列长度；入队立即返回，满则丢弃
   task-queue-capacity: 256
+  refine-queue-capacity: 256
+  nudenet:
+    enable: true
+    # 可选外部路径；默认 classpath nudenet_640m.onnx
+    input-size: 640
+    nms-iou-threshold: 0.45
+    min-detection-score: 0.01
   storage-base-path: ./data/moderation/storage
-  # 本地违规图保留天数，0=不清理
   storage-retention-days: 7
-  # 存储清理 cron，默认每天 03:00
   storage-cleanup-cron: "0 0 3 * * ?"
   notify:
     enable: false
@@ -39,5 +40,5 @@ group-moderation:
       notify-group-id: 0
       notify-at-user-ids: [ ]
       exempt-user-ids: [ ]
-      # 加权 NSFW 比例阈值（见 NsfwPrediction 权重说明）
-      nsfw-ratio-threshold: 0.85
+      # 群级初筛阈值（百分比）；0.60=60%，也可写 60
+      nsfw-ratio-threshold: 0.60

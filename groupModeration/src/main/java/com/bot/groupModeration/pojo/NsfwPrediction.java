@@ -83,16 +83,17 @@ public class NsfwPrediction {
         return sb.toString();
     }
 
-    private static final String NSFW_RATIO_LABEL = "nsfw_ratio";
+    /**
+     * 初筛置信度（0～100）：{@link #getNsfwRatio()} × 100。
+     */
+    public float getConfidencePercent() {
+        return getNsfwRatio() * 100f;
+    }
 
     /**
-     * 与群配置的 {@code nsfw-ratio-threshold} 比较，判定是否命中处置。
+     * 初筛是否进入 NudeNet 精判。
      */
-    public TriggerResult evaluateAgainst(double threshold) {
-        float ratio = getNsfwRatio();
-        if (ratio >= threshold) {
-            return TriggerResult.of(NSFW_RATIO_LABEL, ratio, threshold);
-        }
-        return TriggerResult.notTriggered();
+    public boolean passesPrescreen(double thresholdPercent) {
+        return getConfidencePercent() >= thresholdPercent;
     }
 }

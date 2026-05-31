@@ -47,9 +47,14 @@ public class GroupModerationConfig {
     private int onnxThreads = 1;
 
     /**
-     * 待审核任务队列容量；入队非阻塞，满时丢弃并打日志。
+     * 初筛任务队列容量；满时丢弃。
      */
     private int taskQueueCapacity = 256;
+
+    /**
+     * 精判任务队列容量；满时丢弃（初筛已过线但未精判的消息）。
+     */
+    private int refineQueueCapacity = 256;
 
     /**
      * 违规图片存储根目录
@@ -72,6 +77,16 @@ public class GroupModerationConfig {
     private GroupNotifyConfig notify = new GroupNotifyConfig();
 
     /**
+     * NudeNet 精判模型配置
+     */
+    private NudeNetConfig nudenet = new NudeNetConfig();
+
+    /**
+     * 初筛置信度阈值（百分比，默认 60）。≥ 此值进入 NudeNet 精判。
+     */
+    private double prescreenThreshold = 60d;
+
+    /**
      * 各群独立配置列表
      */
     private List<GroupModerationItem> groups = new ArrayList<>();
@@ -89,5 +104,17 @@ public class GroupModerationConfig {
         return groups.stream()
                 .filter(g -> g.getGroupId() == groupId && g.isEnable())
                 .findFirst();
+    }
+
+    /**
+     * NudeNet 精判配置（绑定 {@code group-moderation.nudenet}）。
+     */
+    @Data
+    public static class NudeNetConfig {
+        private boolean enable = true;
+        private String modelPath;
+        private int inputSize = 640;
+        private float nmsIouThreshold = 0.45f;
+        private float minDetectionScore = 0.01f;
     }
 }

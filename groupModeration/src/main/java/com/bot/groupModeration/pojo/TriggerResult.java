@@ -5,7 +5,7 @@ import lombok.Data;
 /**
  * 规则评估结果：是否触发处置及用于日志/告警的分数与阈值。
  * <p>
- * 当前唯一触发标签为 {@code nsfw_ratio}（见 {@link NsfwPrediction#evaluateAgainst(double)}）。
+ * 精判 ban 时 {@link #label} 形如 {@code nudenet:REASON}，{@link #score} 为触发的聚合分。
  */
 @Data
 public class TriggerResult {
