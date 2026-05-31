@@ -17,6 +17,10 @@ group-moderation:
   # 待审任务队列长度；入队立即返回，满则丢弃
   task-queue-capacity: 256
   storage-base-path: ./data/moderation/storage
+  # 本地违规图保留天数，0=不清理
+  storage-retention-days: 7
+  # 存储清理 cron，默认每天 03:00
+  storage-cleanup-cron: "0 0 3 * * ?"
   notify:
     enable: false
     target-group-id: 0

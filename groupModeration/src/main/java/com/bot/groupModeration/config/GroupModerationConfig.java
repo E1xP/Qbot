@@ -55,6 +55,16 @@ public class GroupModerationConfig {
     private String storageBasePath = "./data/moderation/storage";
 
     /**
+     * 本地违规图保留天数；超过后由定时任务删除对应日期目录。0 表示不自动清理。
+     */
+    private int storageRetentionDays = 7;
+
+    /**
+     * 存储清理 cron，默认每天 03:00
+     */
+    private String storageCleanupCron = "0 0 3 * * ?";
+
+    /**
      * 全局告警默认配置
      */
     private GroupNotifyConfig notify = new GroupNotifyConfig();
