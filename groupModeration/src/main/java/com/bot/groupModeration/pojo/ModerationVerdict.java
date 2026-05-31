@@ -188,13 +188,16 @@ public class ModerationVerdict {
     }
 
     /**
-     * 日志用：精判触发部位（去掉 nudenet: 前缀）
+     * 日志用：精判触发部位（中文）
      */
     public String resolveRefineTriggerPart() {
         if (!isTriggered() || trigger == null || trigger.getLabel() == null) {
             return null;
         }
         String label = trigger.getLabel();
-        return label.startsWith("nudenet:") ? label.substring("nudenet:".length()) : label;
+        if (label.startsWith("nudenet:")) {
+            label = label.substring("nudenet:".length());
+        }
+        return com.bot.groupModeration.detector.NudeNetBanJudgment.toDisplayTriggerPart(label);
     }
 }

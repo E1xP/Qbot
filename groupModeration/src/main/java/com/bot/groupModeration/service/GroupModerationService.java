@@ -5,6 +5,7 @@ import com.bot.entity.CQGroupUser;
 import com.bot.event.message.CQGroupMessageEvent;
 import com.bot.groupModeration.config.GroupModerationConfig;
 import com.bot.groupModeration.detector.GantManOnnxNsfwDetector;
+import com.bot.groupModeration.detector.NudeNetBanJudgment;
 import com.bot.groupModeration.detector.NudeNetOnnxDetector;
 import com.bot.groupModeration.pojo.*;
 import com.bot.groupModeration.util.CqImageParser;
@@ -103,16 +104,17 @@ public class GroupModerationService {
         msg.append("群审·").append(kind.label)
                 .append(" | refineResult=").append(verdict.resolveRefineLogResult());
         if (verdict.isTriggered() && verdict.getTrigger() != null) {
-            msg.append(" | part=").append(verdict.resolveRefineTriggerPart())
-                    .append(" | score=").append(String.format(Locale.ROOT, "%.3f", verdict.getTrigger().getScore()));
+            msg.append(" | 触发=").append(verdict.resolveRefineTriggerPart())
+                    .append(' ').append(String.format(Locale.ROOT, "%.0f%%",
+                            verdict.getTrigger().getScore() * 100f));
         }
         String hits = verdict.resolveRefineHitsForLog();
         if (hits != null && !hits.isEmpty()) {
-            msg.append(" | hits=").append(hits);
+            msg.append(" | 检测=").append(hits);
         }
         String aggs = verdict.resolveRefineAggsForLog();
         if (aggs != null && !aggs.isEmpty()) {
-            msg.append(" | aggs=").append(aggs);
+            msg.append(" | 聚合=").append(aggs);
         }
         msg.append(" | groupId=").append(task.getGroupId())
                 .append(" | messageId=").append(task.getMessageId())
@@ -351,11 +353,11 @@ public class GroupModerationService {
                 verdict = cached.get().withImageBytes(imageBytes);
                 logModerationResult(messageTask, fileName, ModerationLogKind.CACHE, verdict, prescreenThreshold, false);
             } else {
-                NudeNetOnnxDetector.JudgeResult judge = refineDetector.judge(imageBytes);
+                NudeNetBanJudgment.RefineResult refine = refineDetector.judge(imageBytes);
                 verdict = ModerationVerdict.of(
                         pending.getPrescreenScores(), pending.getPrescreenConfidence(),
-                        true, judge.getSummary(), judge.getHits(), judge.getAggs(),
-                        judge.getTrigger(), imageBytes);
+                        true, refine.getSummary(), refine.getHitsLog(), refine.getAggsLog(),
+                        refine.getTrigger(), imageBytes);
                 cachePut(imageBytes, verdict);
                 logModerationResult(messageTask, fileName, ModerationLogKind.REFINE, verdict, prescreenThreshold, true);
             }

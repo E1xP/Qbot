@@ -7,7 +7,6 @@ import ai.onnxruntime.OrtSession;
 import com.bot.groupModeration.config.GroupModerationConfig;
 import com.bot.groupModeration.config.OnnxModelLoader;
 import com.bot.groupModeration.pojo.NudeNetDetection;
-import com.bot.groupModeration.pojo.TriggerResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -24,9 +23,7 @@ import java.util.*;
 import java.util.List;
 
 /**
- * NudeNet 640m YOLOv8 ONNX 检测器。
- * <p>
- * 输入 NCHW {@code [1, 3, 640, 640]}，输出 {@code [1, 4+nc, anchors]}，经 NMS 后返回检测框列表。
+ * NudeNet 640m ONNX 推理：YOLO 解码 → {@link NudeNetBanJudgment#refine}。
  */
 @Component
 @Slf4j
@@ -53,23 +50,6 @@ public class NudeNetOnnxDetector {
             "BUTTOCKS_COVERED"
     };
     private static final float MIN_BOX_SCORE = 0.25f;
-    private static final float BREAST_ONLY_THRESHOLD = 0.43f;
-    private static final float BUTT_ONLY_THRESHOLD = 0.46f;
-    private static final float TORSO_COMBINED_THRESHOLD = 0.38f;
-    private static final float BREAST_TORSO_WEIGHT = 0.52f;
-    private static final float BUTT_TORSO_WEIGHT = 0.48f;
-    private static final Map<String, Float> LABEL_THRESHOLDS = new LinkedHashMap<>();
-
-    static {
-        LABEL_THRESHOLDS.put("FEMALE_GENITALIA_EXPOSED", 0.35f);
-        LABEL_THRESHOLDS.put("MALE_GENITALIA_EXPOSED", 0.35f);
-        LABEL_THRESHOLDS.put("ANUS_EXPOSED", 0.40f);
-        LABEL_THRESHOLDS.put("FEMALE_GENITALIA_COVERED", 0.72f);
-        LABEL_THRESHOLDS.put("BELLY_EXPOSED", 0.75f);
-        LABEL_THRESHOLDS.put("BELLY_COVERED", 0.80f);
-        LABEL_THRESHOLDS.put("ANUS_COVERED", 0.80f);
-        LABEL_THRESHOLDS.put("ARMPITS_EXPOSED", 0.85f);
-    }
 
     @Resource
     private GroupModerationConfig config;
@@ -80,87 +60,6 @@ public class NudeNetOnnxDetector {
     private String inputName;
     private boolean ready;
     private int inputSize;
-
-    private static boolean isIgnoredLabel(String label) {
-        if (label == null) {
-            return true;
-        }
-        String upper = label.toUpperCase(Locale.ROOT);
-        return upper.startsWith("FACE") || upper.startsWith("FEET") || "ARMPITS_COVERED".equals(upper);
-    }
-
-    private static boolean isBreastLabel(String label) {
-        String upper = normalizeLabel(label);
-        return "FEMALE_BREAST_EXPOSED".equals(upper) || "FEMALE_BREAST_COVERED".equals(upper)
-                || "MALE_BREAST_EXPOSED".equals(upper);
-    }
-
-    private static boolean isButtLabel(String label) {
-        String upper = normalizeLabel(label);
-        return "BUTTOCKS_EXPOSED".equals(upper) || "BUTTOCKS_COVERED".equals(upper);
-    }
-
-    private static float torsoWeight(String label) {
-        switch (normalizeLabel(label)) {
-            case "FEMALE_BREAST_EXPOSED":
-            case "BUTTOCKS_EXPOSED":
-                return 1.00f;
-            case "FEMALE_BREAST_COVERED":
-            case "BUTTOCKS_COVERED":
-                return 0.75f;
-            case "MALE_BREAST_EXPOSED":
-                return 0.60f;
-            default:
-                return 0f;
-        }
-    }
-
-    private static boolean hasTorsoDetection(List<NudeNetDetection> valid, boolean breast, boolean butt) {
-        for (NudeNetDetection d : valid) {
-            if (breast && isBreastLabel(d.getLabel())) {
-                return true;
-            }
-            if (butt && isButtLabel(d.getLabel())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static float softOrScores(List<NudeNetDetection> valid, String label) {
-        List<Float> scores = new ArrayList<>();
-        String target = normalizeLabel(label);
-        for (NudeNetDetection d : valid) {
-            if (target.equals(normalizeLabel(d.getLabel()))) {
-                scores.add(d.getScore());
-            }
-        }
-        return softOr(scores);
-    }
-
-    private static float softOrWeighted(List<NudeNetDetection> valid, boolean breast, boolean butt) {
-        List<Float> scores = new ArrayList<>();
-        for (NudeNetDetection d : valid) {
-            if (breast && isBreastLabel(d.getLabel())) {
-                scores.add(d.getScore() * torsoWeight(d.getLabel()));
-            } else if (butt && isButtLabel(d.getLabel())) {
-                scores.add(d.getScore() * torsoWeight(d.getLabel()));
-            }
-        }
-        return softOr(scores);
-    }
-
-    private static float softOr(List<Float> scores) {
-        if (scores == null || scores.isEmpty()) {
-            return 0f;
-        }
-        double product = 1.0;
-        for (float score : scores) {
-            float s = Math.max(0f, Math.min(1f, score));
-            product *= (1.0 - s);
-        }
-        return (float) (1.0 - product);
-    }
 
     private static String normalizeLabel(String label) {
         return label == null ? "" : label.trim().toUpperCase(Locale.ROOT);
@@ -317,27 +216,6 @@ public class NudeNetOnnxDetector {
         return union <= 0f ? 0f : interArea / union;
     }
 
-    private static List<NudeNetDetection> mapToOriginal(List<RawDetection> raw, LetterboxResult letterbox,
-                                                        int srcW, int srcH) {
-        List<NudeNetDetection> list = new ArrayList<>();
-        for (RawDetection d : raw) {
-            float x1 = (d.getX1() - letterbox.padX) / letterbox.scale;
-            float y1 = (d.getY1() - letterbox.padY) / letterbox.scale;
-            float x2 = (d.getX2() - letterbox.padX) / letterbox.scale;
-            float y2 = (d.getY2() - letterbox.padY) / letterbox.scale;
-            float nx1 = clamp01(x1 / srcW);
-            float ny1 = clamp01(y1 / srcH);
-            float nx2 = clamp01(x2 / srcW);
-            float ny2 = clamp01(y2 / srcH);
-            list.add(new NudeNetDetection(d.getLabel(), d.getScore(), new float[]{nx1, ny1, nx2, ny2}));
-        }
-        return list;
-    }
-
-    private static float clamp01(float v) {
-        return Math.max(0f, Math.min(1f, v));
-    }
-
     @PostConstruct
     public void init() {
         OnnxModelLoader.ResolvedFileModel resolved = onnxModelLoader.resolveNudeNet(config);
@@ -380,52 +258,19 @@ public class NudeNetOnnxDetector {
         return ready;
     }
 
-    private static String formatHits(List<NudeNetDetection> valid) {
-        if (valid.isEmpty()) {
-            return null;
+    private static List<NudeNetDetection> toDetections(List<RawDetection> raw) {
+        List<NudeNetDetection> list = new ArrayList<>(raw.size());
+        for (RawDetection d : raw) {
+            list.add(new NudeNetDetection(d.getLabel(), d.getScore()));
         }
-        List<NudeNetDetection> sorted = new ArrayList<>(valid);
-        sorted.sort(Comparator.comparing(NudeNetDetection::getScore).reversed());
-        StringBuilder hits = new StringBuilder();
-        int limit = Math.min(8, sorted.size());
-        for (int i = 0; i < limit; i++) {
-            NudeNetDetection d = sorted.get(i);
-            if (i > 0) {
-                hits.append(';');
-            }
-            hits.append(d.getLabel()).append('=').append(format(d.getScore()));
-        }
-        if (sorted.size() > limit) {
-            hits.append(";...(+").append(sorted.size() - limit).append(')');
-        }
-        return hits.toString();
+        return list;
     }
 
-    private static void appendAgg(StringBuilder aggs, String key, float value) {
-        if (value <= 0f) {
-            return;
-        }
-        if (aggs.length() > 0) {
-            aggs.append(';');
-        }
-        aggs.append(key).append('=').append(format(value));
+    public NudeNetBanJudgment.RefineResult judge(byte[] imageBytes) throws Exception {
+        return NudeNetBanJudgment.refine(detect(imageBytes));
     }
 
-    private static void appendDetectionHits(StringBuilder summary, List<NudeNetDetection> valid) {
-        String hits = formatHits(valid);
-        if (hits != null) {
-            summary.append(", hits=").append(hits);
-        }
-    }
-
-    /**
-     * 检测 + 聚合规则，返回是否 ban 及日志摘要。
-     */
-    public JudgeResult judge(byte[] imageBytes) throws Exception {
-        return judge(predict(imageBytes));
-    }
-
-    public List<NudeNetDetection> predict(byte[] imageBytes) throws Exception {
+    private List<NudeNetDetection> detect(byte[] imageBytes) throws Exception {
         if (!ready) {
             throw new IllegalStateException("NudeNet 模型未就绪");
         }
@@ -442,117 +287,7 @@ public class NudeNetOnnxDetector {
             float[][] channels = extractOutputChannels(result.get(0).getValue());
             List<RawDetection> raw = decodeYolo(channels, decodeThreshold);
             raw = nonMaxSuppression(raw, config.getNudenet().getNmsIouThreshold());
-            return mapToOriginal(raw, letterbox, source.getWidth(), source.getHeight());
-        }
-    }
-
-    public JudgeResult judge(List<NudeNetDetection> detections) {
-        List<NudeNetDetection> valid = new ArrayList<>();
-        if (detections != null) {
-            for (NudeNetDetection d : detections) {
-                if (d != null && d.getScore() >= MIN_BOX_SCORE && !isIgnoredLabel(d.getLabel())) {
-                    valid.add(d);
-                }
-            }
-        }
-
-        String hits = formatHits(valid);
-        StringBuilder aggs = new StringBuilder();
-        StringBuilder summary = new StringBuilder();
-        summary.append("boxes=").append(valid.size());
-        appendDetectionHits(summary, valid);
-
-        for (Map.Entry<String, Float> entry : LABEL_THRESHOLDS.entrySet()) {
-            float agg = softOrScores(valid, entry.getKey());
-            if (agg > 0f) {
-                appendAgg(aggs, entry.getKey() + "Agg", agg);
-                summary.append(", ").append(entry.getKey()).append("Agg=").append(format(agg));
-            }
-            if (agg >= entry.getValue()) {
-                summary.append(", ban=label");
-                return JudgeResult.ban(entry.getKey(), agg, entry.getValue(), summary.toString(), hits, aggs.toString());
-            }
-        }
-
-        boolean hasBreast = hasTorsoDetection(valid, true, false);
-        boolean hasButt = hasTorsoDetection(valid, false, true);
-        float breastAgg = softOrWeighted(valid, true, false);
-        float buttAgg = softOrWeighted(valid, false, true);
-        if (breastAgg > 0f) {
-            appendAgg(aggs, "breastAgg", breastAgg);
-            summary.append(", breastAgg=").append(format(breastAgg));
-        }
-        if (buttAgg > 0f) {
-            appendAgg(aggs, "buttAgg", buttAgg);
-            summary.append(", buttAgg=").append(format(buttAgg));
-        }
-
-        if (hasBreast && !hasButt) {
-            if (breastAgg >= BREAST_ONLY_THRESHOLD) {
-                summary.append(", ban=breast_only");
-                return JudgeResult.ban("BREAST", breastAgg, BREAST_ONLY_THRESHOLD, summary.toString(), hits, aggs.toString());
-            }
-        } else if (hasButt && !hasBreast) {
-            if (buttAgg >= BUTT_ONLY_THRESHOLD) {
-                summary.append(", ban=butt_only");
-                return JudgeResult.ban("BUTTOCKS", buttAgg, BUTT_ONLY_THRESHOLD, summary.toString(), hits, aggs.toString());
-            }
-        } else if (hasBreast && hasButt) {
-            float torso = breastAgg * BREAST_TORSO_WEIGHT + buttAgg * BUTT_TORSO_WEIGHT;
-            appendAgg(aggs, "torso", torso);
-            summary.append(", torso=").append(format(torso));
-            if (torso >= TORSO_COMBINED_THRESHOLD) {
-                summary.append(", ban=torso");
-                return JudgeResult.ban("TORSO", torso, TORSO_COMBINED_THRESHOLD, summary.toString(), hits, aggs.toString());
-            }
-            if (breastAgg >= BREAST_ONLY_THRESHOLD) {
-                summary.append(", ban=breast_combo");
-                return JudgeResult.ban("BREAST", breastAgg, BREAST_ONLY_THRESHOLD, summary.toString(), hits, aggs.toString());
-            }
-            if (buttAgg >= BUTT_ONLY_THRESHOLD) {
-                summary.append(", ban=butt_combo");
-                return JudgeResult.ban("BUTTOCKS", buttAgg, BUTT_ONLY_THRESHOLD, summary.toString(), hits, aggs.toString());
-            }
-        }
-
-        return JudgeResult.pass(summary.toString(), hits, aggs.toString());
-    }
-
-    public static final class JudgeResult {
-        private final TriggerResult trigger;
-        private final String summary;
-        private final String hits;
-        private final String aggs;
-
-        private JudgeResult(TriggerResult trigger, String summary, String hits, String aggs) {
-            this.trigger = trigger;
-            this.summary = summary;
-            this.hits = hits;
-            this.aggs = aggs;
-        }
-
-        static JudgeResult pass(String summary, String hits, String aggs) {
-            return new JudgeResult(TriggerResult.notTriggered(), summary, hits, aggs);
-        }
-
-        static JudgeResult ban(String reason, float score, float threshold, String summary, String hits, String aggs) {
-            return new JudgeResult(TriggerResult.of("nudenet:" + reason, score, threshold), summary, hits, aggs);
-        }
-
-        public TriggerResult getTrigger() {
-            return trigger;
-        }
-
-        public String getSummary() {
-            return summary;
-        }
-
-        public String getHits() {
-            return hits;
-        }
-
-        public String getAggs() {
-            return aggs;
+            return toDetections(raw);
         }
     }
 
