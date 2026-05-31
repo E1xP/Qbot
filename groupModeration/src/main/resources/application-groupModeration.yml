@@ -1,0 +1,36 @@
+# =============================================================================
+# 群图片本地审核模块（groupModeration）
+# 模型：GantMan/nsfw_model 转 ONNX，五分类 drawings/hentai/neutral/porn/sexy
+# 内置模型位于 src/main/resources/（打包进 jar）
+# =============================================================================
+group-moderation:
+  enable: false
+  # 内置模型选择：224（MobileNet，较快）或 299（Inception，较慢）
+  # 对应 resources/nsfw_mobilenet2_224x224.onnx 与 nsfw_inception_v3_299x299.onnx
+  model-variant: 299
+  # 可选：指定外部 ONNX 文件路径；非空且文件存在时覆盖内置模型
+  # model-path: D:/models/custom.onnx
+  # 可选：手动指定输入边长；为 0 时随 model-variant 自动为 224 或 299
+  model-input-size: 299
+  # ONNX 推理线程（与队列单 worker 配合，建议 1）
+  onnx-threads: 1
+  # 待审任务队列长度；入队立即返回，满则丢弃
+  task-queue-capacity: 256
+  storage-base-path: ./data/moderation/storage
+  notify:
+    enable: false
+    target-group-id: 0
+    at-user-ids: [ ]
+  groups:
+    - group-id: 0
+      enable: false
+      ban-enable: false
+      ban-duration-seconds: 600
+      recall-enable: false
+      save-enable: true
+      notify-enable: false
+      notify-group-id: 0
+      notify-at-user-ids: [ ]
+      exempt-user-ids: [ ]
+      # hentai+porn+sexy（各权重1）占五类总分比例，达到阈值则触发
+      nsfw-ratio-threshold: 0.85

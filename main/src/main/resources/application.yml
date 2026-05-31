@@ -3,9 +3,11 @@ spring:
     include:
       - rsshubqq
       - steamBranch
+      - groupModeration
   cq:
-    plugin-list: #插件列表
+    plugin-list: #插件列表（顺序敏感：群审须在 FilterPlugin 前，否则 replyGroup=false 时收不到非指令群消息）
       - com.bot.logService.plugin.LogPlugin
+      - com.bot.groupModeration.plugin.GroupModerationPlugin  # 群图片本地审核，配置见 application-groupModeration.yml
       - com.bot.main.plugin.FilterPlugin
       - com.bot.rsshubqq.plugin.RssHubPlugin
       - com.bot.steamBranch.plugin.SteamBranchPlugin

@@ -1,5 +1,6 @@
 package com.bot.robot;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.bot.entity.CQGroupAnonymous;
@@ -100,6 +101,25 @@ public class CoolQ {
         ApiData<MessageData> result = apiHandler.sendApiMessage(botSession, action, params).toJavaObject(new TypeReference<ApiData<MessageData>>() {
         });
         return result;
+    }
+
+    /**
+     * 发送群合并转发消息（go-cqhttp send_group_forward_msg）。
+     *
+     * @param group_id 群号
+     * @param messages 转发节点数组，每项 type=node
+     * @return 结果
+     */
+    public ApiData<MessageData> sendGroupForwardMsg(long group_id, JSONArray messages) {
+        ApiEnum action = ApiEnum.SEND_GROUP_FORWARD_MSG;
+
+        JSONObject params = new JSONObject();
+        params.put("group_id", group_id);
+        params.put("messages", messages);
+
+        return apiHandler.sendApiMessage(botSession, action, params)
+                .toJavaObject(new TypeReference<ApiData<MessageData>>() {
+                });
     }
 
     /**

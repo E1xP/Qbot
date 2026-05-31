@@ -44,7 +44,8 @@ public enum ApiEnum {
     SET_RESTART_PLUGIN("set_restart_plugin", "重启 HTTP API 插件"),
     CLEAN_DATA_DIR("clean_data_dir", "清理数据目录"),
     CLEAN_PLUGIN_LOG("clean_plugin_log", "清理插件日志"),
-    GET_MSG("get_msg", "获取消息信息");
+    GET_MSG("get_msg", "获取消息信息"),
+    SEND_GROUP_FORWARD_MSG("send_group_forward_msg", "发送群合并转发");
 
 
     private String url;

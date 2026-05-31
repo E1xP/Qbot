@@ -15,6 +15,8 @@
         <module>steamBranch</module>
         <module>logService</module>
         <module>spring-cq</module>
+        <!-- 群图片本地 NSFW 审核（ONNX） -->
+        <module>groupModeration</module>
     </modules>
 
     <properties>
