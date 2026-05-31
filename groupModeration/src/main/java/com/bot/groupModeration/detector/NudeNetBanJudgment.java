@@ -26,13 +26,13 @@ public final class NudeNetBanJudgment {
         RULES.put("FEMALE_BREAST_EXPOSED", new Rule(0.43f, 1.00f));
         RULES.put("BUTTOCKS_EXPOSED", new Rule(0.46f, 1.00f));
         RULES.put("MALE_BREAST_EXPOSED", new Rule(0.65f, 0.60f));
-        RULES.put("FEMALE_BREAST_COVERED", new Rule(0.72f, 0.68f));
-        RULES.put("BUTTOCKS_COVERED", new Rule(0.76f, 0.68f));
+        RULES.put("FEMALE_BREAST_COVERED", new Rule(0.68f, 0.75f));
+        RULES.put("BUTTOCKS_COVERED", new Rule(0.72f, 0.75f));
 
         RULES.put("BELLY_EXPOSED", new Rule(0.85f));
-        RULES.put("FEMALE_GENITALIA_COVERED", new Rule(0.75f));
-        RULES.put("BELLY_COVERED", new Rule(0.92f));
-        RULES.put("ANUS_COVERED", new Rule(0.83f));
+        RULES.put("FEMALE_GENITALIA_COVERED", new Rule(0.72f));
+        RULES.put("BELLY_COVERED", new Rule(0.90f));
+        RULES.put("ANUS_COVERED", new Rule(0.80f));
         RULES.put("ARMPITS_EXPOSED", new Rule(0.85f));
 
         RULES.put("FACE_FEMALE", new Rule(-1f));
@@ -84,10 +84,6 @@ public final class NudeNetBanJudgment {
         List<Float> buttWeighted = new ArrayList<>();
         float breastRaw = 0f;
         float buttRaw = 0f;
-        boolean breastExposed = false;
-        boolean breastCovered = false;
-        boolean buttExposed = false;
-        boolean buttCovered = false;
 
         for (NudeNetDetection detection : detections) {
             if (detection == null || detection.getLabel() == null) {
@@ -105,21 +101,11 @@ public final class NudeNetBanJudgment {
             }
 
             if (isBreast(label)) {
-                if (label.endsWith("_COVERED")) {
-                    breastCovered = true;
-                } else {
-                    breastExposed = true;
-                }
                 breastRaw = Math.max(breastRaw, detection.getScore());
                 if (detection.getScore() >= PRESENCE) {
                     breastWeighted.add(detection.getScore() * rule.torsoWeight);
                 }
             } else {
-                if (label.endsWith("_COVERED")) {
-                    buttCovered = true;
-                } else {
-                    buttExposed = true;
-                }
                 buttRaw = Math.max(buttRaw, detection.getScore());
                 if (detection.getScore() >= PRESENCE) {
                     buttWeighted.add(detection.getScore() * rule.torsoWeight);
@@ -136,16 +122,14 @@ public final class NudeNetBanJudgment {
             Rule rule = RULES.get(entry.getKey());
             if (agg >= rule.threshold) {
                 RegionResult region = new RegionResult(breastRaw, buttRaw,
-                        aggregateScores(breastWeighted), aggregateScores(buttWeighted),
-                        breastExposed, breastCovered, buttExposed, buttCovered);
+                        aggregateScores(breastWeighted), aggregateScores(buttWeighted));
                 return new Evaluation(true, entry.getKey(), agg, rule.threshold, region, labelAggs);
             }
         }
 
         RegionResult region = new RegionResult(
                 breastRaw, buttRaw,
-                aggregateScores(breastWeighted), aggregateScores(buttWeighted),
-                breastExposed, breastCovered, buttExposed, buttCovered);
+                aggregateScores(breastWeighted), aggregateScores(buttWeighted));
         Evaluation torsoBan = evaluateTorso(region, labelAggs);
         if (torsoBan != null) {
             return torsoBan;
@@ -174,8 +158,8 @@ public final class NudeNetBanJudgment {
             return null;
         }
 
-        float breastThreshold = breastSingleThreshold(region);
-        float buttThreshold = buttSingleThreshold(region);
+        float breastThreshold = RULES.get("FEMALE_BREAST_EXPOSED").threshold;
+        float buttThreshold = RULES.get("BUTTOCKS_EXPOSED").threshold;
 
         if (hasBreast && !hasButt) {
             if (region.breastScore >= breastThreshold) {
@@ -308,20 +292,6 @@ public final class NudeNetBanJudgment {
         return String.format(Locale.ROOT, "%.0f%%", score * 100f);
     }
 
-    private static float breastSingleThreshold(RegionResult region) {
-        if (region.breastExposed) {
-            return RULES.get("FEMALE_BREAST_EXPOSED").threshold;
-        }
-        return RULES.get("FEMALE_BREAST_COVERED").threshold;
-    }
-
-    private static float buttSingleThreshold(RegionResult region) {
-        if (region.buttExposed) {
-            return RULES.get("BUTTOCKS_EXPOSED").threshold;
-        }
-        return RULES.get("BUTTOCKS_COVERED").threshold;
-    }
-
     private static boolean isBreast(String label) {
         return label != null && label.contains("BREAST");
     }
@@ -386,22 +356,12 @@ public final class NudeNetBanJudgment {
         final float buttRaw;
         final float breastScore;
         final float buttScore;
-        final boolean breastExposed;
-        final boolean breastCovered;
-        final boolean buttExposed;
-        final boolean buttCovered;
 
-        RegionResult(float breastRaw, float buttRaw, float breastScore, float buttScore,
-                     boolean breastExposed, boolean breastCovered,
-                     boolean buttExposed, boolean buttCovered) {
+        RegionResult(float breastRaw, float buttRaw, float breastScore, float buttScore) {
             this.breastRaw = breastRaw;
             this.buttRaw = buttRaw;
             this.breastScore = breastScore;
             this.buttScore = buttScore;
-            this.breastExposed = breastExposed;
-            this.breastCovered = breastCovered;
-            this.buttExposed = buttExposed;
-            this.buttCovered = buttCovered;
         }
     }
 
