@@ -6,7 +6,7 @@ import com.bot.groupModeration.pojo.TriggerResult;
 import org.springframework.stereotype.Service;
 
 /**
- * 置信度触发：hentai、porn、sexy 各按权重 1 加权后的比例达到阈值则命中。
+ * 置信度触发：hentai+porn+sexy 加权分之和 / 五类加权分之和，达到阈值则命中。
  */
 @Service
 public class ConfidenceTriggerService {

@@ -83,6 +83,30 @@ public class GroupModerationService {
         }
     }
 
+    private static String segmentFileName(CqImageParser.CqImageSegment segment) {
+        if (segment.getFile() != null && !segment.getFile().isEmpty()) {
+            return segment.getFile();
+        }
+        if (segment.getUrl() != null && !segment.getUrl().isEmpty()) {
+            return segment.getUrl();
+        }
+        return "-";
+    }
+
+    private void consumeLoop() {
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                ModerationTask task = queue.take();
+                processTask(task);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception e) {
+                log.error("群审消费异常", e);
+            }
+        }
+    }
+
     public void enqueue(CoolQ cq, CQGroupMessageEvent event, GroupModerationItem groupConfig) {
         if (!config.isEnable() || !nsfwDetector.isReady()) {
             return;
@@ -108,21 +132,9 @@ public class GroupModerationService {
 
         if (!queue.offer(task)) {
             log.warn("群审队列已满，丢弃 messageId={} groupId={}", task.getMessageId(), task.getGroupId());
+            return;
         }
-    }
-
-    private void consumeLoop() {
-        while (!Thread.currentThread().isInterrupted()) {
-            try {
-                ModerationTask task = queue.take();
-                processTask(task);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            } catch (Exception e) {
-                log.error("群审消费异常", e);
-            }
-        }
+        log.info("群审已入队 messageId={} groupId={} images={}", task.getMessageId(), task.getGroupId(), segments.size());
     }
 
     private void processTask(ModerationTask task) {
@@ -145,7 +157,7 @@ public class GroupModerationService {
 
         for (CqImageParser.CqImageSegment segment : task.getImageSegments()) {
             try {
-                ImageHit hit = inspectImage(cq, segment, groupConfig);
+                ImageHit hit = inspectImage(cq, task.getMessageId(), segment, groupConfig);
                 if (!hit.trigger.isTriggered()) {
                     continue;
                 }
@@ -196,16 +208,20 @@ public class GroupModerationService {
         }
     }
 
-    private ImageHit inspectImage(CoolQ cq, CqImageParser.CqImageSegment segment,
+    private ImageHit inspectImage(CoolQ cq, int messageId, CqImageParser.CqImageSegment segment,
                                   GroupModerationItem groupConfig) throws Exception {
+        String fileName = segmentFileName(segment);
         byte[] imageBytes = imageFetchService.fetch(cq, segment).orElse(null);
         if (imageBytes == null || imageBytes.length == 0) {
+            log.warn("群审检测失败 messageId={} file={} reason=fetch_empty", messageId, fileName);
             return ImageHit.pass();
         }
 
         String cacheKey = sha256(imageBytes);
         CachedHit cached = recentCache.get(cacheKey);
         if (cached != null) {
+            log.info("群审检测 messageId={} file={} scores={} triggered={} cache=true",
+                    messageId, fileName, cached.scores, cached.trigger.isTriggered());
             return cached.trigger.isTriggered()
                     ? new ImageHit(cached.trigger, cached.scores, imageBytes)
                     : ImageHit.pass();
@@ -213,10 +229,12 @@ public class GroupModerationService {
 
         NsfwPrediction prediction = nsfwDetector.predict(imageBytes);
         TriggerResult trigger = confidenceTriggerService.evaluate(prediction, groupConfig);
+        String scores = prediction.formatTopScores();
+        log.info("群审检测 messageId={} file={} scores={} nsfw_ratio={} triggered={}",
+                messageId, fileName, scores, String.format("%.3f", prediction.getNsfwRatio()), trigger.isTriggered());
         if (!trigger.isTriggered()) {
             return ImageHit.pass();
         }
-        String scores = prediction.formatTopScores();
         recentCache.put(cacheKey, new CachedHit(trigger, scores));
         return new ImageHit(trigger, scores, imageBytes);
     }

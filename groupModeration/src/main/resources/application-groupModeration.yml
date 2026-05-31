@@ -32,5 +32,5 @@ group-moderation:
       notify-group-id: 0
       notify-at-user-ids: [ ]
       exempt-user-ids: [ ]
-      # hentai+porn+sexy（各权重1）占五类总分比例，达到阈值则触发
+      # 加权 NSFW 比例阈值（见 NsfwPrediction 权重说明）
       nsfw-ratio-threshold: 0.85

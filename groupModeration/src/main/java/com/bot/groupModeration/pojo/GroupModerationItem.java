@@ -62,8 +62,8 @@ public class GroupModerationItem {
     private List<Long> exemptUserIds = new ArrayList<>();
 
     /**
-     * NSFW 比例阈值：hentai + porn + sexy（各权重 1）/ 五类分数之和。
-     * 范围建议 0.75～0.95；越高误报越少、漏检越多。
+     * NSFW 比例阈值：分子=hentai+porn+sexy 的 Σ(p×w)，分母=五类 Σ(p×w)；
+     * 权重 drawings=100, hentai=95, neutral=100, porn=150, sexy=85。
      */
     private double nsfwRatioThreshold = 0.85;
 }

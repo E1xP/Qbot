@@ -17,13 +17,24 @@ public class NsfwPrediction {
     public static final String[] LABELS = {"drawings", "hentai", "neutral", "porn", "sexy"};
 
     /**
-     * 参与 NSFW 比例计算的标签（权重均为 1）
+     * 分子参与标签：hentai、porn、sexy
      */
     public static final String[] NSFW_LABELS = {"hentai", "porn", "sexy"};
 
     /**
-     * 标签 → 概率（0～1）
+     * 五类权重：drawings=100, hentai=95, neutral=100, porn=150, sexy=85
      */
+    private static final Map<String, Float> WEIGHTS = new LinkedHashMap<>();
+
+    static {
+        WEIGHTS.put("drawings", 100f);
+        WEIGHTS.put("hentai", 95f);
+        WEIGHTS.put("neutral", 100f);
+        WEIGHTS.put("porn", 150f);
+        WEIGHTS.put("sexy", 85f);
+    }
+
+    /** 标签 → 概率（0～1） */
     private final Map<String, Float> scores = new LinkedHashMap<>();
 
     public float getScore(String label) {
@@ -31,16 +42,24 @@ public class NsfwPrediction {
     }
 
     /**
-     * hentai、porn、sexy 各按权重 1 求和后，除以五类分数之和（各类权重均为 1）。
+     * 单类加权分：p × w
+     */
+    public float getWeightedScore(String label) {
+        float weight = WEIGHTS.getOrDefault(label.toLowerCase(), 0f);
+        return getScore(label) * weight;
+    }
+
+    /**
+     * 分子 = hentai+porn+sexy 的 Σ(p×w)；分母 = 五类 Σ(p×w)。
      */
     public float getNsfwRatio() {
         float numerator = 0f;
         for (String label : NSFW_LABELS) {
-            numerator += getScore(label);
+            numerator += getWeightedScore(label);
         }
         float denominator = 0f;
         for (String label : LABELS) {
-            denominator += getScore(label);
+            denominator += getWeightedScore(label);
         }
         return denominator <= 0f ? 0f : numerator / denominator;
     }
