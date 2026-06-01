@@ -26,8 +26,17 @@ public class ApiHandler {
      * @param message 内容
      */
     public void onReceiveApiMessage(JSONObject message) {
-        String echo = message.get("echo").toString();
+        if (message == null) {
+            return;
+        }
+        String echo = message.getString("echo");
+        if (echo == null) {
+            return;
+        }
         ApiSender apiSender = apiCallbackMap.get(echo);
+        if (apiSender == null) {
+            return;
+        }
         apiSender.onReceiveJson(message);
         apiCallbackMap.remove(echo);
     }
