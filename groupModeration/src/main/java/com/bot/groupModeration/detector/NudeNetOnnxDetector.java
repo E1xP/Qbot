@@ -14,15 +14,15 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import javax.imageio.ImageIO;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.nio.FloatBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * NudeNet 640m ONNX 推理：YOLO 解码 → {@link NudeNetBanJudgment#refine}。
@@ -51,7 +51,6 @@ public class NudeNetOnnxDetector {
             "FEMALE_BREAST_COVERED",
             "BUTTOCKS_COVERED"
     };
-    private static final float MIN_BOX_SCORE = 0.25f;
 
     @Resource
     private GroupModerationConfig config;
@@ -62,14 +61,6 @@ public class NudeNetOnnxDetector {
     private String inputName;
     private boolean ready;
     private int inputSize;
-
-    private static String normalizeLabel(String label) {
-        return label == null ? "" : label.trim().toUpperCase(Locale.ROOT);
-    }
-
-    private static String format(float value) {
-        return String.format(Locale.ROOT, "%.3f", value);
-    }
 
     /**
      * 归一化为 {@code [4+nc, anchors]}（channels 为行、anchors 为列）。
@@ -115,6 +106,17 @@ public class NudeNetOnnxDetector {
         return transposed;
     }
 
+    private static BufferedImage toRgb(BufferedImage source) {
+        if (source.getType() == BufferedImage.TYPE_INT_RGB) {
+            return source;
+        }
+        BufferedImage rgb = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = rgb.createGraphics();
+        g.drawImage(source, 0, 0, null);
+        g.dispose();
+        return rgb;
+    }
+
     private static float[] toNchw(BufferedImage rgb, int size) {
         float[] nchw = new float[3 * size * size];
         int plane = size * size;
@@ -146,7 +148,30 @@ public class NudeNetOnnxDetector {
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
         g.drawImage(source, padX, padY, newW, newH, null);
         g.dispose();
-        return new LetterboxResult(canvas, scale, padX, padY);
+        return new LetterboxResult(canvas, scale, padX, padY, newW, newH, srcW, srcH);
+    }
+
+    private static float computeAreaRatio(RawDetection detection, LetterboxResult letterbox) {
+        float contentX1 = letterbox.padX;
+        float contentY1 = letterbox.padY;
+        float contentX2 = letterbox.padX + letterbox.newW;
+        float contentY2 = letterbox.padY + letterbox.newH;
+
+        float interX1 = Math.max(detection.getX1(), contentX1);
+        float interY1 = Math.max(detection.getY1(), contentY1);
+        float interX2 = Math.min(detection.getX2(), contentX2);
+        float interY2 = Math.min(detection.getY2(), contentY2);
+        float interW = Math.max(0f, interX2 - interX1);
+        float interH = Math.max(0f, interY2 - interY1);
+        float boxAreaModel = interW * interH;
+
+        float scaleSq = letterbox.scale * letterbox.scale;
+        if (scaleSq <= 0f || letterbox.srcW <= 0 || letterbox.srcH <= 0) {
+            return 0f;
+        }
+        float boxAreaOriginal = boxAreaModel / scaleSq;
+        float imageArea = (float) letterbox.srcW * letterbox.srcH;
+        return Math.min(1f, Math.max(0f, boxAreaOriginal / imageArea));
     }
 
     private static List<RawDetection> decodeYolo(float[][] channels, float minScore) {
@@ -263,10 +288,11 @@ public class NudeNetOnnxDetector {
         return ready;
     }
 
-    private static List<NudeNetDetection> toDetections(List<RawDetection> raw) {
+    private static List<NudeNetDetection> toDetections(List<RawDetection> raw, LetterboxResult letterbox) {
         List<NudeNetDetection> list = new ArrayList<>(raw.size());
         for (RawDetection d : raw) {
-            list.add(new NudeNetDetection(d.getLabel(), d.getScore()));
+            float areaRatio = computeAreaRatio(d, letterbox);
+            list.add(new NudeNetDetection(d.getLabel(), d.getScore(), areaRatio));
         }
         return list;
     }
@@ -279,10 +305,11 @@ public class NudeNetOnnxDetector {
         if (!ready) {
             throw new IllegalStateException("NudeNet 模型未就绪");
         }
-        BufferedImage source = ImageIO.read(new ByteArrayInputStream(imageBytes));
-        if (source == null) {
+        BufferedImage loaded = ImageIO.read(new ByteArrayInputStream(imageBytes));
+        if (loaded == null) {
             return new ArrayList<>();
         }
+        BufferedImage source = toRgb(loaded);
         LetterboxResult letterbox = letterbox(source, inputSize);
         float[] nchw = toNchw(letterbox.image, inputSize);
         long[] shape = new long[]{1, 3, inputSize, inputSize};
@@ -292,7 +319,7 @@ public class NudeNetOnnxDetector {
             float[][] channels = extractOutputChannels(result.get(0).getValue());
             List<RawDetection> raw = decodeYolo(channels, decodeThreshold);
             raw = nonMaxSuppression(raw, config.getNudenet().getNmsIouThreshold());
-            return toDetections(raw);
+            return toDetections(raw, letterbox);
         }
     }
 
@@ -301,12 +328,21 @@ public class NudeNetOnnxDetector {
         final float scale;
         final int padX;
         final int padY;
+        final int newW;
+        final int newH;
+        final int srcW;
+        final int srcH;
 
-        LetterboxResult(BufferedImage image, float scale, int padX, int padY) {
+        LetterboxResult(BufferedImage image, float scale, int padX, int padY,
+                        int newW, int newH, int srcW, int srcH) {
             this.image = image;
             this.scale = scale;
             this.padX = padX;
             this.padY = padY;
+            this.newW = newW;
+            this.newH = newH;
+            this.srcW = srcW;
+            this.srcH = srcH;
         }
     }
 

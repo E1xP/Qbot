@@ -121,6 +121,9 @@ public class ModerationVerdict {
             if (part != null) {
                 sb.append("触发：").append(part).append(' ')
                         .append(String.format(Locale.ROOT, "%.0f%%", trigger.getScore() * 100f))
+                        .append("(阈值")
+                        .append(String.format(Locale.ROOT, "%.0f%%", trigger.getThreshold() * 100f))
+                        .append(')')
                         .append('\n');
             }
         }
