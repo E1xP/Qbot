@@ -29,7 +29,7 @@ import java.util.concurrent.*;
 @Slf4j
 public class GroupModerationService {
 
-    private final Map<String, ModerationVerdict> resultCache = new ConcurrentHashMap<>();
+    private ModerationResultCache resultCache;
 
     @Resource
     private GroupModerationConfig config;
@@ -58,6 +58,13 @@ public class GroupModerationService {
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    /**
+     * 未命中处置时丢弃 verdict 中的图片字节，减轻队列与列表占用。
+     */
+    private static ModerationVerdict slimVerdictForQueue(ModerationVerdict verdict) {
+        return verdict.isTriggered() ? verdict : verdict.withoutImageBytes();
     }
 
     private static String digest(byte[] data) throws Exception {
@@ -172,7 +179,7 @@ public class GroupModerationService {
                 }
                 ModerationVerdict verdict = cachedVerdict.withImageBytes(imageBytes);
                 logModerationResult(task, fileName, ModerationLogKind.CACHE, verdict, prescreenThreshold);
-                done.add(new RefineTask.DoneImage(segment, verdict));
+                done.add(new RefineTask.DoneImage(segment, slimVerdictForQueue(verdict)));
                 continue;
             }
 
@@ -184,7 +191,7 @@ public class GroupModerationService {
                 ModerationVerdict verdict = ModerationVerdict.prescreenPass(scores, confidence, imageBytes);
                 cachePut(imageBytes, verdict);
                 logModerationResult(task, fileName, ModerationLogKind.PRESCREEN, verdict, prescreenThreshold);
-                done.add(new RefineTask.DoneImage(segment, verdict));
+                done.add(new RefineTask.DoneImage(segment, verdict.withoutImageBytes()));
                 continue;
             }
 
@@ -237,6 +244,9 @@ public class GroupModerationService {
 
     @PostConstruct
     public void startWorkers() {
+        resultCache = new ModerationResultCache(
+                config.getResultCacheMaxSize(),
+                config.getResultCacheExpireAfterAccessMinutes());
         int prescreenCap = Math.max(16, config.getTaskQueueCapacity());
         int refineCap = Math.max(16, config.getRefineQueueCapacity());
         prescreenQueue = new LinkedBlockingQueue<>(prescreenCap);
@@ -255,8 +265,10 @@ public class GroupModerationService {
 
         prescreenWorker.submit(this::prescreenLoop);
         refineWorker.submit(this::refineLoop);
-        log.info("群审队列已启动 prescreenCapacity={} refineCapacity={} prescreenThreshold={}%",
-                prescreenCap, refineCap, config.getPrescreenThreshold());
+        log.info("群审队列已启动 prescreenCapacity={} refineCapacity={} prescreenThreshold={}% "
+                        + "resultCacheMaxSize={} resultCacheExpireMinutes={}",
+                prescreenCap, refineCap, config.getPrescreenThreshold(),
+                config.getResultCacheMaxSize(), config.getResultCacheExpireAfterAccessMinutes());
     }
 
     @PreDestroy
@@ -363,7 +375,8 @@ public class GroupModerationService {
                 cachePut(imageBytes, verdict);
                 logModerationResult(messageTask, fileName, ModerationLogKind.REFINE, verdict, prescreenThreshold, true);
             }
-            all.add(new RefineTask.DoneImage(pending.getSegment(), verdict));
+            all.add(new RefineTask.DoneImage(pending.getSegment(), slimVerdictForQueue(verdict)));
+            pending.setImageBytes(null);
         }
 
         applyActions(cq, messageTask, groupConfig, all);
@@ -458,7 +471,7 @@ public class GroupModerationService {
     }
 
     private Optional<ModerationVerdict> cacheGet(byte[] imageBytes) throws Exception {
-        return Optional.ofNullable(resultCache.get(digest(imageBytes)));
+        return resultCache.get(digest(imageBytes));
     }
 
     private void cachePut(byte[] imageBytes, ModerationVerdict verdict) throws Exception {

@@ -87,6 +87,16 @@ public class GroupModerationConfig {
     private double prescreenThreshold = 60d;
 
     /**
+     * 审核结果缓存最大条数（LRU 淘汰）。
+     */
+    private int resultCacheMaxSize = 1024;
+
+    /**
+     * 审核结果缓存：最后访问后过期时间（分钟）。
+     */
+    private long resultCacheExpireAfterAccessMinutes = 1440;
+
+    /**
      * 各群独立配置列表
      */
     private List<GroupModerationItem> groups = new ArrayList<>();

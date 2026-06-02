@@ -16,6 +16,9 @@ group-moderation:
   onnx-threads: 1
   task-queue-capacity: 256
   refine-queue-capacity: 256
+  # 审核结果缓存：最多 1024 条，最后访问 24 小时后过期
+  result-cache-max-size: 1024
+  result-cache-expire-after-access-minutes: 1440
   nudenet:
     enable: true
     # 可选外部路径；默认 classpath nudenet_640m.onnx
