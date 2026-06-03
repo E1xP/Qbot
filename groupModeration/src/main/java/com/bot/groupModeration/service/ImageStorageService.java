@@ -8,35 +8,24 @@ import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 /**
- * 违规图片落盘：按群号、日期分子目录；临时目录供「只通知不持久化」场景使用。
+ * 违规图片落盘：{@code {storage-base-path}/{groupId}/}；临时目录 {@code _temp} 供「只通知不持久化」场景。
  */
 @Service
 @Slf4j
 public class ImageStorageService {
 
-    private static final SimpleDateFormat DIR_FORMAT = new SimpleDateFormat("yyyyMMdd");
-
     @Resource
     private GroupModerationConfig config;
 
     /**
-     * 持久化保存：{storage-base-path}/{groupId}/{yyyyMMdd}/{timestamp}_{userId}_{messageId}.ext
-     *
-     * @param groupId    来源群
-     * @param userId     发送者 QQ
-     * @param messageId  消息 ID
-     * @param imageBytes 图片内容
-     * @return 写入后的文件
+     * 持久化保存：{@code {storage-base-path}/{groupId}/{timestamp}_{userId}_{messageId}.ext}
      */
     public File save(long groupId, long userId, int messageId, byte[] imageBytes,
                      String fileHint, String urlHint) throws IOException {
         String suffix = ImageFetchService.guessSuffix(imageBytes, fileHint, urlHint);
-        String day = DIR_FORMAT.format(new Date());
-        File dir = new File(config.getStorageBasePath(), groupId + File.separator + day);
+        File dir = new File(config.getStorageBasePath(), String.valueOf(groupId));
         if (!dir.exists() && !dir.mkdirs()) {
             log.warn("创建存储目录失败: {}", dir.getAbsolutePath());
         }
@@ -60,6 +49,28 @@ public class ImageStorageService {
         return target;
     }
 
+    private int deleteExpiredUnder(File dir, long cutoffMs) {
+        if (!dir.isDirectory()) {
+            return 0;
+        }
+        File[] children = dir.listFiles();
+        if (children == null) {
+            return 0;
+        }
+        int count = 0;
+        for (File child : children) {
+            if (child.isFile()) {
+                if (child.lastModified() < cutoffMs && child.delete()) {
+                    count++;
+                }
+            } else if (child.isDirectory()) {
+                count += deleteExpiredUnder(child, cutoffMs);
+                deleteIfEmpty(child);
+            }
+        }
+        return count;
+    }
+
     private static int deleteTempFilesOlderThan(File tempDir, long cutoffMs) {
         if (!tempDir.isDirectory()) {
             return 0;
@@ -77,25 +88,6 @@ public class ImageStorageService {
         return count;
     }
 
-    private static int deleteRecursive(File file) {
-        if (file == null || !file.exists()) {
-            return 0;
-        }
-        int count = 0;
-        if (file.isDirectory()) {
-            File[] children = file.listFiles();
-            if (children != null) {
-                for (File child : children) {
-                    count += deleteRecursive(child);
-                }
-            }
-        }
-        if (file.delete()) {
-            count++;
-        }
-        return count;
-    }
-
     private static void deleteIfEmpty(File dir) {
         if (!dir.isDirectory()) {
             return;
@@ -107,9 +99,9 @@ public class ImageStorageService {
     }
 
     /**
-     * 删除超过保留天数的持久化目录（{groupId}/{yyyyMMdd}）及 _temp 下过期文件。
+     * 删除超过保留天数的持久化文件（{@code {groupId}/} 下，含历史日期子目录）及 {@code _temp} 过期文件。
      *
-     * @return [删除的日期目录数, 删除的临时文件数]
+     * @return [删除的持久化文件数, 删除的临时文件数]
      */
     public int[] cleanupExpired() {
         int retentionDays = config.getStorageRetentionDays();
@@ -121,11 +113,8 @@ public class ImageStorageService {
             return new int[]{0, 0};
         }
 
-        java.time.LocalDate today = java.time.LocalDate.now();
-        java.time.format.DateTimeFormatter dayFmt = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd");
-        long tempCutoffMs = System.currentTimeMillis() - retentionDays * 86_400_000L;
-
-        int deletedDayDirs = 0;
+        long cutoffMs = System.currentTimeMillis() - retentionDays * 86_400_000L;
+        int deletedPersistedFiles = 0;
         int deletedTempFiles = 0;
 
         File[] children = base.listFiles();
@@ -134,36 +123,19 @@ public class ImageStorageService {
         }
         for (File child : children) {
             if ("_temp".equals(child.getName())) {
-                deletedTempFiles += deleteTempFilesOlderThan(child, tempCutoffMs);
+                deletedTempFiles += deleteTempFilesOlderThan(child, cutoffMs);
                 continue;
             }
             if (!child.isDirectory()) {
                 continue;
             }
-            File[] dayDirs = child.listFiles();
-            if (dayDirs == null) {
-                continue;
-            }
-            for (File dayDir : dayDirs) {
-                if (!dayDir.isDirectory()) {
-                    continue;
-                }
-                try {
-                    java.time.LocalDate dirDate = java.time.LocalDate.parse(dayDir.getName(), dayFmt);
-                    long ageDays = java.time.temporal.ChronoUnit.DAYS.between(dirDate, today);
-                    if (ageDays >= retentionDays) {
-                        deletedDayDirs += deleteRecursive(dayDir) > 0 ? 1 : 0;
-                    }
-                } catch (Exception ignored) {
-                    // 非 yyyyMMdd 目录名，跳过
-                }
-            }
+            deletedPersistedFiles += deleteExpiredUnder(child, cutoffMs);
             deleteIfEmpty(child);
         }
-        if (deletedDayDirs > 0 || deletedTempFiles > 0) {
-            log.info("群审存储清理 retentionDays={} deletedDayDirs={} deletedTempFiles={} base={}",
-                    retentionDays, deletedDayDirs, deletedTempFiles, base.getAbsolutePath());
+        if (deletedPersistedFiles > 0 || deletedTempFiles > 0) {
+            log.info("群审存储清理 retentionDays={} deletedPersistedFiles={} deletedTempFiles={} base={}",
+                    retentionDays, deletedPersistedFiles, deletedTempFiles, base.getAbsolutePath());
         }
-        return new int[]{deletedDayDirs, deletedTempFiles};
+        return new int[]{deletedPersistedFiles, deletedTempFiles};
     }
 }

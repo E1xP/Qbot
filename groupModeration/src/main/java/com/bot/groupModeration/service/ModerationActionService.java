@@ -87,7 +87,7 @@ public class ModerationActionService {
     /**
      * 撤回整条群消息（{@code delete_msg}）。
      *
-     * @param savedImageName 日志用，持久化相对路径 {@code 群号/日期/文件名}，未保存时为 {@code "-"}
+     * @param savedImageName 日志用，持久化相对路径 {@code 群号/文件名}，未保存时为 {@code "-"}
      */
     public boolean recall(CoolQ cq, int messageId, long groupId, long userId, String senderName,
                           TriggerResult trigger, String allScores, String savedImageName) {

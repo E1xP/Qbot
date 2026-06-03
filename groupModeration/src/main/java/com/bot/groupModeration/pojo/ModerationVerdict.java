@@ -22,10 +22,14 @@ public class ModerationVerdict {
     private final String refineAggs;
     private final TriggerResult trigger;
     private final byte[] imageBytes;
+    /**
+     * 结论来自审核结果缓存；违规时不再落盘、不写临时文件。
+     */
+    private final boolean fromCache;
 
     private ModerationVerdict(float prescreenConfidence, String prescreenScores, boolean awaitingRefine,
                               boolean refined, String refineSummary, String refineHits, String refineAggs,
-                              TriggerResult trigger, byte[] imageBytes) {
+                              TriggerResult trigger, byte[] imageBytes, boolean fromCache) {
         this.prescreenConfidence = prescreenConfidence;
         this.prescreenScores = prescreenScores;
         this.awaitingRefine = awaitingRefine;
@@ -35,16 +39,17 @@ public class ModerationVerdict {
         this.refineAggs = refineAggs;
         this.trigger = trigger;
         this.imageBytes = imageBytes;
+        this.fromCache = fromCache;
     }
 
     public static ModerationVerdict fetchFailed() {
         return new ModerationVerdict(0f, null, false, false, null, null, null,
-                TriggerResult.notTriggered(), null);
+                TriggerResult.notTriggered(), null, false);
     }
 
     public static ModerationVerdict prescreenPass(String prescreenScores, float confidence, byte[] imageBytes) {
         return new ModerationVerdict(confidence, prescreenScores, false, false, null, null, null,
-                TriggerResult.notTriggered(), imageBytes);
+                TriggerResult.notTriggered(), imageBytes, false);
     }
 
     /**
@@ -52,14 +57,14 @@ public class ModerationVerdict {
      */
     public static ModerationVerdict prescreenAwaitRefine(String prescreenScores, float confidence, byte[] imageBytes) {
         return new ModerationVerdict(confidence, prescreenScores, true, false, null, null, null,
-                TriggerResult.notTriggered(), imageBytes);
+                TriggerResult.notTriggered(), imageBytes, false);
     }
 
     public static ModerationVerdict of(String prescreenScores, float confidence, boolean refined,
                                        String refineSummary, String refineHits, String refineAggs,
                                        TriggerResult trigger, byte[] imageBytes) {
         return new ModerationVerdict(confidence, prescreenScores, false, refined, refineSummary,
-                refineHits, refineAggs, trigger, imageBytes);
+                refineHits, refineAggs, trigger, imageBytes, false);
     }
 
     public boolean isTriggered() {
@@ -195,12 +200,18 @@ public class ModerationVerdict {
      */
     public ModerationVerdict withoutImageBytes() {
         return new ModerationVerdict(prescreenConfidence, prescreenScores, awaitingRefine, refined,
-                refineSummary, refineHits, refineAggs, trigger, null);
+                refineSummary, refineHits, refineAggs, trigger, null, fromCache);
     }
 
     public ModerationVerdict withImageBytes(byte[] imageBytes) {
         return new ModerationVerdict(prescreenConfidence, prescreenScores, awaitingRefine, refined,
-                refineSummary, refineHits, refineAggs, trigger, imageBytes);
+                refineSummary, refineHits, refineAggs, trigger, imageBytes, fromCache);
+    }
+
+    /** 标记为缓存命中结论，处置阶段跳过落盘 */
+    public ModerationVerdict asCacheHit() {
+        return new ModerationVerdict(prescreenConfidence, prescreenScores, awaitingRefine, refined,
+                refineSummary, refineHits, refineAggs, trigger, imageBytes, true);
     }
 
     /**

@@ -62,7 +62,7 @@ public class GroupModerationConfig {
     private String storageBasePath = "./data/moderation/storage";
 
     /**
-     * 本地违规图保留天数；超过后由定时任务删除对应日期目录。0 表示不自动清理。
+     * 本地违规图保留天数；超过后由定时任务按文件最后修改时间删除各群目录下过期文件。0 表示不自动清理。
      */
     private int storageRetentionDays = 7;
 

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * 群审定时任务：按 {@code storage-retention-days} 清理本地违规图目录与 {@code _temp} 临时文件。
+ * 群审定时任务：按 {@code storage-retention-days} 清理各群目录下过期违规图与 {@code _temp} 临时文件。
  * <p>
  * Cron 由 {@code group-moderation.storage-cleanup-cron} 配置，默认每天 03:00。
  */

@@ -64,7 +64,10 @@ public class GroupModerationService {
      * 未命中处置时丢弃 verdict 中的图片字节，减轻队列与列表占用。
      */
     private static ModerationVerdict slimVerdictForQueue(ModerationVerdict verdict) {
-        return verdict.isTriggered() ? verdict : verdict.withoutImageBytes();
+        if (verdict.isTriggered() && !verdict.isFromCache()) {
+            return verdict;
+        }
+        return verdict.withoutImageBytes();
     }
 
     private static String digest(byte[] data) throws Exception {
@@ -177,7 +180,7 @@ public class GroupModerationService {
                             .build());
                     continue;
                 }
-                ModerationVerdict verdict = cachedVerdict.withImageBytes(imageBytes);
+                ModerationVerdict verdict = cachedVerdict.withImageBytes(imageBytes).asCacheHit();
                 logModerationResult(task, fileName, ModerationLogKind.CACHE, verdict, prescreenThreshold);
                 done.add(new RefineTask.DoneImage(segment, slimVerdictForQueue(verdict)));
                 continue;
@@ -231,15 +234,11 @@ public class GroupModerationService {
         if (file == null) {
             return "-";
         }
-        File dayDir = file.getParentFile();
-        if (dayDir == null) {
+        File groupDir = file.getParentFile();
+        if (groupDir == null) {
             return file.getName();
         }
-        File groupDir = dayDir.getParentFile();
-        if (groupDir == null) {
-            return dayDir.getName() + "/" + file.getName();
-        }
-        return groupDir.getName() + "/" + dayDir.getName() + "/" + file.getName();
+        return groupDir.getName() + "/" + file.getName();
     }
 
     @PostConstruct
@@ -364,7 +363,7 @@ public class GroupModerationService {
 
             Optional<ModerationVerdict> cached = cacheGet(imageBytes);
             if (cached.isPresent() && cached.get().isRefined()) {
-                verdict = cached.get().withImageBytes(imageBytes);
+                verdict = cached.get().withImageBytes(imageBytes).asCacheHit();
                 logModerationResult(messageTask, fileName, ModerationLogKind.CACHE, verdict, prescreenThreshold, false);
             } else {
                 NudeNetBanJudgment.RefineResult refine = refineDetector.judge(imageBytes);
@@ -409,7 +408,7 @@ public class GroupModerationService {
             }
             CqImageParser.CqImageSegment segment = item.getSegment();
             File savedFile = null;
-            if (groupConfig.isSaveEnable() && verdict.getImageBytes() != null) {
+            if (!verdict.isFromCache() && groupConfig.isSaveEnable() && verdict.getImageBytes() != null) {
                 try {
                     savedFile = imageStorageService.save(
                             task.getGroupId(), task.getUserId(), task.getMessageId(), verdict.getImageBytes(),
@@ -423,7 +422,7 @@ public class GroupModerationService {
                             task.getMessageId(), task.getGroupId(), task.getUserId(), e);
                 }
             }
-            if (notifyImage == null && verdict.getImageBytes() != null) {
+            if (!verdict.isFromCache() && notifyImage == null && verdict.getImageBytes() != null) {
                 try {
                     notifyImage = savedFile != null
                             ? savedFile
