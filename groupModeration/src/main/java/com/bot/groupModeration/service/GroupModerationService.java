@@ -19,7 +19,10 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.io.File;
 import java.security.MessageDigest;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.concurrent.*;
 
 /**
@@ -28,6 +31,11 @@ import java.util.concurrent.*;
 @Service
 @Slf4j
 public class GroupModerationService {
+
+    /**
+     * 精判算法版本；变更后递增，使旧缓存条目自动失效。
+     */
+    private static final int REFINE_CACHE_VERSION = 2;
 
     private ModerationResultCache resultCache;
 
@@ -118,9 +126,11 @@ public class GroupModerationService {
             msg.append(" | ").append(verdict.getRefineSummary());
         }
         if (verdict.isTriggered() && verdict.getTrigger() != null) {
+            TriggerResult trigger = verdict.getTrigger();
             msg.append(" | 触发=").append(verdict.resolveRefineTriggerPart())
-                    .append(' ').append(String.format(Locale.ROOT, "%.0f%%",
-                            verdict.getTrigger().getScore() * 100f));
+                    .append(' ').append(String.format(Locale.ROOT, "%.0f%%", trigger.getScore() * 100f))
+                    .append("(阈值").append(String.format(Locale.ROOT, "%.0f%%", trigger.getThreshold() * 100f))
+                    .append(')');
         }
         msg.append(" | 检测=").append(orNone(verdict.resolveRefineHitsForLog()))
                 .append(" | 聚合=").append(orNone(verdict.resolveRefineAggsForLog()))
@@ -469,11 +479,15 @@ public class GroupModerationService {
         }
     }
 
+    private String cacheKey(byte[] imageBytes) throws Exception {
+        return REFINE_CACHE_VERSION + ":" + digest(imageBytes);
+    }
+
     private Optional<ModerationVerdict> cacheGet(byte[] imageBytes) throws Exception {
-        return resultCache.get(digest(imageBytes));
+        return resultCache.get(cacheKey(imageBytes));
     }
 
     private void cachePut(byte[] imageBytes, ModerationVerdict verdict) throws Exception {
-        resultCache.put(digest(imageBytes), verdict.withoutImageBytes());
+        resultCache.put(cacheKey(imageBytes), verdict.withoutImageBytes());
     }
 }

@@ -6,34 +6,36 @@ import com.bot.groupModeration.pojo.TriggerResult;
 import java.util.*;
 
 /**
- * NudeNet 精判：检测框 soft-OR 聚合 + 胸/臀联合规则，输出 ban 结论与日志字段。
- * <p>
- * 算法与 {@code com.e1xp.nsfw.NudeNetBanJudgment} 对齐。
+ * NudeNet 精判：有效分（score × 面积权重）+ soft-OR 聚合 + 胸/臀联合规则。
  */
 public final class NudeNetBanJudgment {
 
+    private static final float MIN_REGION_SCORE = 0.05f;
     static final float PRESENCE = 0.25f;
-    private static final float TORSO_BAN = 0.38f;
+    private static final float TORSO_BAN = 0.46f;
     private static final float BREAST_WEIGHT = 0.52f;
     private static final float BUTTOCKS_WEIGHT = 0.48f;
+    private static final float BREAST_THRESHOLD = 0.40f;
+    private static final float BUTTOCKS_THRESHOLD = 0.55f;
     private static final Map<String, Rule> RULES = new LinkedHashMap<>();
 
     static {
-        RULES.put("FEMALE_GENITALIA_EXPOSED", new Rule(0.35f));
-        RULES.put("MALE_GENITALIA_EXPOSED", new Rule(0.35f));
-        RULES.put("ANUS_EXPOSED", new Rule(0.40f));
+        RULES.put("FEMALE_GENITALIA_EXPOSED", new Rule(0.30f, 0f, 0.004f));
+        RULES.put("MALE_GENITALIA_EXPOSED", new Rule(0.30f, 0f, 0.004f));
+        RULES.put("FEMALE_GENITALIA_COVERED", new Rule(0.65f, 0f, 0.008f));
 
-        RULES.put("FEMALE_BREAST_EXPOSED", new Rule(0.43f, 1.00f));
-        RULES.put("BUTTOCKS_EXPOSED", new Rule(0.46f, 1.00f));
-        RULES.put("MALE_BREAST_EXPOSED", new Rule(0.65f, 0.60f));
-        RULES.put("FEMALE_BREAST_COVERED", new Rule(0.68f, 0.75f));
-        RULES.put("BUTTOCKS_COVERED", new Rule(0.72f, 0.75f));
+        RULES.put("ANUS_EXPOSED", new Rule(0.40f, 0f, 0.008f));
+        RULES.put("ANUS_COVERED", new Rule(0.80f, 0f, 0.015f));
 
-        RULES.put("BELLY_EXPOSED", new Rule(0.75f));
-        RULES.put("FEMALE_GENITALIA_COVERED", new Rule(0.72f));
-        RULES.put("BELLY_COVERED", new Rule(0.80f));
-        RULES.put("ANUS_COVERED", new Rule(0.80f));
-        RULES.put("ARMPITS_EXPOSED", new Rule(0.85f));
+        RULES.put("FEMALE_BREAST_EXPOSED", new Rule(0.43f, 1.00f, 0.012f));
+        RULES.put("FEMALE_BREAST_COVERED", new Rule(0.68f, 0.75f, 0.022f));
+        RULES.put("MALE_BREAST_EXPOSED", new Rule(0.65f, 0.60f, 0.018f));
+        RULES.put("BUTTOCKS_EXPOSED", new Rule(0.46f, 1.00f, 0.024f));
+        RULES.put("BUTTOCKS_COVERED", new Rule(0.72f, 0.75f, 0.032f));
+
+        RULES.put("BELLY_EXPOSED", new Rule(0.75f, 0f, 0.030f));
+        RULES.put("BELLY_COVERED", new Rule(0.80f, 0f, 0.035f));
+        RULES.put("ARMPITS_EXPOSED", new Rule(0.85f, 0f, 0.030f));
 
         RULES.put("FACE_FEMALE", new Rule(-1f));
         RULES.put("FACE_MALE", new Rule(-1f));
@@ -52,9 +54,10 @@ public final class NudeNetBanJudgment {
         List<NudeNetDetection> all = detections != null ? detections : new ArrayList<>();
 
         Evaluation eval = evaluate(all);
+        int activeCount = countActive(all);
         String hitsLog = formatHits(all);
         String aggsLog = formatAggs(eval);
-        String summary = buildSummary(all.size(), eval);
+        String summary = buildSummary(all.size(), activeCount, eval);
 
         TriggerResult trigger = eval.banned
                 ? TriggerResult.of("nudenet:" + eval.banReason, eval.banScore, eval.banThreshold)
@@ -78,6 +81,46 @@ public final class NudeNetBanJudgment {
         }
     }
 
+    static float areaWeight(float areaRatio, float areaReference) {
+        if (areaRatio <= 0f || areaReference <= 0f) {
+            return 0f;
+        }
+        float ratio = areaRatio / areaReference;
+        if (ratio >= 1f) {
+            return 1f;
+        }
+        return (float) Math.sqrt(ratio);
+    }
+
+    static float effectiveScore(NudeNetDetection detection, Rule rule) {
+        if (detection == null || rule == null) {
+            return 0f;
+        }
+        float areaRatio = detection.getAreaRatio();
+        return detection.getScore() * areaWeight(areaRatio, rule.areaReference);
+    }
+
+    private static boolean isActive(NudeNetDetection detection) {
+        if (detection == null || detection.getLabel() == null) {
+            return false;
+        }
+        if (detection.getScore() < MIN_REGION_SCORE) {
+            return false;
+        }
+        Rule rule = RULES.get(normalizeLabel(detection.getLabel()));
+        return rule != null && !rule.ignored();
+    }
+
+    private static int countActive(List<NudeNetDetection> detections) {
+        int count = 0;
+        for (NudeNetDetection detection : detections) {
+            if (isActive(detection)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     private static Evaluation evaluate(List<NudeNetDetection> detections) {
         Map<String, List<Float>> labelScores = new LinkedHashMap<>();
         List<Float> breastWeighted = new ArrayList<>();
@@ -89,26 +132,31 @@ public final class NudeNetBanJudgment {
             if (detection == null || detection.getLabel() == null) {
                 continue;
             }
+            if (detection.getScore() < MIN_REGION_SCORE) {
+                continue;
+            }
             String label = normalizeLabel(detection.getLabel());
             Rule rule = RULES.get(label);
             if (rule == null || rule.ignored()) {
                 continue;
             }
 
+            float effective = effectiveScore(detection, rule);
+
             if (rule.torsoWeight <= 0f) {
-                labelScores.computeIfAbsent(label, key -> new ArrayList<>()).add(detection.getScore());
+                labelScores.computeIfAbsent(label, key -> new ArrayList<>()).add(effective);
                 continue;
             }
 
             if (isBreast(label)) {
-                breastRaw = Math.max(breastRaw, detection.getScore());
-                if (detection.getScore() >= PRESENCE) {
-                    breastWeighted.add(detection.getScore() * rule.torsoWeight);
+                breastRaw = Math.max(breastRaw, effective);
+                if (effective >= PRESENCE) {
+                    breastWeighted.add(effective * rule.torsoWeight);
                 }
             } else {
-                buttRaw = Math.max(buttRaw, detection.getScore());
-                if (detection.getScore() >= PRESENCE) {
-                    buttWeighted.add(detection.getScore() * rule.torsoWeight);
+                buttRaw = Math.max(buttRaw, effective);
+                if (effective >= PRESENCE) {
+                    buttWeighted.add(effective * rule.torsoWeight);
                 }
             }
         }
@@ -158,18 +206,15 @@ public final class NudeNetBanJudgment {
             return null;
         }
 
-        float breastThreshold = RULES.get("FEMALE_BREAST_EXPOSED").threshold;
-        float buttThreshold = RULES.get("BUTTOCKS_EXPOSED").threshold;
-
         if (hasBreast && !hasButt) {
-            if (region.breastScore >= breastThreshold) {
-                return new Evaluation(true, "BREAST", region.breastScore, breastThreshold, region, labelAggs);
+            if (region.breastScore >= BREAST_THRESHOLD) {
+                return new Evaluation(true, "BREAST", region.breastScore, BREAST_THRESHOLD, region, labelAggs);
             }
             return null;
         }
         if (hasButt && !hasBreast) {
-            if (region.buttScore >= buttThreshold) {
-                return new Evaluation(true, "BUTTOCKS", region.buttScore, buttThreshold, region, labelAggs);
+            if (region.buttScore >= BUTTOCKS_THRESHOLD) {
+                return new Evaluation(true, "BUTTOCKS", region.buttScore, BUTTOCKS_THRESHOLD, region, labelAggs);
             }
             return null;
         }
@@ -178,17 +223,18 @@ public final class NudeNetBanJudgment {
         if (combined >= TORSO_BAN) {
             return new Evaluation(true, "TORSO", combined, TORSO_BAN, region, labelAggs);
         }
-        if (region.breastScore >= breastThreshold) {
-            return new Evaluation(true, "BREAST", region.breastScore, breastThreshold, region, labelAggs);
+        if (region.breastScore >= BREAST_THRESHOLD) {
+            return new Evaluation(true, "BREAST", region.breastScore, BREAST_THRESHOLD, region, labelAggs);
         }
-        if (region.buttScore >= buttThreshold) {
-            return new Evaluation(true, "BUTTOCKS", region.buttScore, buttThreshold, region, labelAggs);
+        if (region.buttScore >= BUTTOCKS_THRESHOLD) {
+            return new Evaluation(true, "BUTTOCKS", region.buttScore, BUTTOCKS_THRESHOLD, region, labelAggs);
         }
         return null;
     }
 
-    private static String buildSummary(int boxCount, Evaluation eval) {
-        StringBuilder sb = new StringBuilder("boxes=").append(boxCount);
+    private static String buildSummary(int boxCount, int activeCount, Evaluation eval) {
+        StringBuilder sb = new StringBuilder("boxes=").append(boxCount)
+                .append(", active=").append(activeCount);
         if (eval.banned) {
             sb.append(", ban=").append(eval.banReason);
         }
@@ -196,22 +242,36 @@ public final class NudeNetBanJudgment {
     }
 
     private static String formatHits(List<NudeNetDetection> detections) {
-        if (detections.isEmpty()) {
+        List<HitLine> active = new ArrayList<>();
+        for (NudeNetDetection detection : detections) {
+            if (!isActive(detection)) {
+                continue;
+            }
+            String label = normalizeLabel(detection.getLabel());
+            Rule rule = RULES.get(label);
+            active.add(new HitLine(detection, effectiveScore(detection, rule)));
+        }
+        if (active.isEmpty()) {
             return null;
         }
-        List<NudeNetDetection> sorted = new ArrayList<>(detections);
-        sorted.sort((a, b) -> Float.compare(b.getScore(), a.getScore()));
+        active.sort((a, b) -> Float.compare(b.effective, a.effective));
         StringBuilder hits = new StringBuilder();
-        int limit = Math.min(6, sorted.size());
+        int limit = Math.min(6, active.size());
         for (int i = 0; i < limit; i++) {
-            NudeNetDetection d = sorted.get(i);
+            HitLine line = active.get(i);
+            NudeNetDetection d = line.detection;
             if (i > 0) {
                 hits.append('、');
             }
-            hits.append(toDisplayPart(d.getLabel())).append(formatPercent(d.getScore()));
+            hits.append(toDisplayPart(d.getLabel()))
+                    .append(formatPercent(d.getScore()))
+                    .append('@')
+                    .append(formatPercent(d.getAreaRatio()))
+                    .append('=')
+                    .append(formatPercent(line.effective));
         }
-        if (sorted.size() > limit) {
-            hits.append(" 等").append(sorted.size()).append("处");
+        if (active.size() > limit) {
+            hits.append(" 等").append(active.size()).append("处");
         }
         return hits.toString();
     }
@@ -333,17 +393,29 @@ public final class NudeNetBanJudgment {
         }
     }
 
+    private static final class HitLine {
+        final NudeNetDetection detection;
+        final float effective;
+
+        HitLine(NudeNetDetection detection, float effective) {
+            this.detection = detection;
+            this.effective = effective;
+        }
+    }
+
     private static final class Rule {
         final float threshold;
         final float torsoWeight;
+        final float areaReference;
 
         Rule(float threshold) {
-            this(threshold, 0f);
+            this(threshold, 0f, 0f);
         }
 
-        Rule(float threshold, float torsoWeight) {
+        Rule(float threshold, float torsoWeight, float areaReference) {
             this.threshold = threshold;
             this.torsoWeight = torsoWeight;
+            this.areaReference = areaReference;
         }
 
         boolean ignored() {
