@@ -100,5 +100,12 @@ mvn clean package -pl main -am
 
 ## 模块文档
 
-- [spring-cq/README.md](spring-cq/README.md) — 框架与 CQHTTP 对接
-- [groupModeration/README.md](groupModeration/README.md) — 群审架构与流程
+| 模块 | 文档 |
+|------|------|
+| `main` | [main/README.md](main/README.md) — 启动、过滤、基础指令、告警实现 |
+| `spring-cq` | [spring-cq/README.md](spring-cq/README.md) — 框架与 CQHTTP 对接 |
+| `rsshubqq` | [rsshubqq/README.md](rsshubqq/README.md) — RssHub 定时抓取与推送 |
+| `steamBranch` | [steamBranch/README.md](steamBranch/README.md) — Steam 分支追踪 |
+| `groupModeration` | [groupModeration/README.md](groupModeration/README.md) — 群图片 ONNX 审核 |
+| `logService` | [logService/README.md](logService/README.md) — 事件访问日志 |
+| `utils` | [utils/README.md](utils/README.md) — 公共工具与告警接口 |
