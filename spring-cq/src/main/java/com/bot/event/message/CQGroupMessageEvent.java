@@ -3,6 +3,7 @@ package com.bot.event.message;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.bot.entity.CQGroupAnonymous;
 import com.bot.entity.CQGroupUser;
+import com.bot.event.enums.GroupMessageSubType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -19,7 +20,7 @@ public class CQGroupMessageEvent extends CQMessageEvent {
      * 系统提示（如「管理员已禁止群内匿名聊天」）是 notice
      */
     @JSONField(name = "sub_type")
-    private String subType;
+    private GroupMessageSubType subType;
     /**
      * 群号
      */

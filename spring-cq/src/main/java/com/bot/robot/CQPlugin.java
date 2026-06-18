@@ -158,7 +158,7 @@ public class CQPlugin {
     }
 
     /**
-     * 加群请求/邀请时调用此方法
+     * 收到加群请求事件时调用此方法（含用户加群申请与邀请机器人入群，可通过 subType 区分）
      *
      * @param cq    机器人对象
      * @param event 事件内容

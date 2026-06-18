@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.bot.entity.CQGroupAnonymous;
 import com.bot.entity.CQStatus;
+import com.bot.event.enums.GroupRequestSubType;
 import com.bot.retdata.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -410,17 +411,17 @@ public class CoolQ {
      * 处理加群请求／邀请
      *
      * @param flag     加群请求的 flag（需从上报的数据中获得）
-     * @param sub_type add 或 invite，请求类型（需要和上报消息中的 sub_type 字段相符）
+     * @param subType  请求类型（需要和上报消息中的 sub_type 字段相符）
      * @param approve  是否同意请求／邀请
      * @param reason   拒绝理由（仅在拒绝时有效）
      * @return 结果
      */
-    public ApiRawData setGroupAddRequest(String flag, String sub_type, boolean approve, String reason) {
+    public ApiRawData setGroupAddRequest(String flag, GroupRequestSubType subType, boolean approve, String reason) {
         ApiEnum action = ApiEnum.SET_GROUP_ADD_REQUEST;
 
         JSONObject params = new JSONObject();
         params.put("flag", flag);
-        params.put("sub_type", sub_type);
+        params.put("sub_type", subType == null ? null : subType.getValue());
         params.put("approve", approve);
         params.put("reason", reason);
 

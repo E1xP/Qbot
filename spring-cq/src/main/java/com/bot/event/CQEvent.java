@@ -1,6 +1,7 @@
 package com.bot.event;
 
 import com.alibaba.fastjson.annotation.JSONField;
+import com.bot.event.enums.PostType;
 import lombok.Data;
 
 /**
@@ -12,7 +13,7 @@ public class CQEvent {
      * 上报类型
      */
     @JSONField(name = "post_type")
-    private String postType;
+    private PostType postType;
 
     /**
      * 事件发生的时间戳

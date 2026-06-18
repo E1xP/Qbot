@@ -1,20 +1,21 @@
 package com.bot.event.request;
 
 import com.alibaba.fastjson.annotation.JSONField;
+import com.bot.event.enums.GroupRequestSubType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 加群请求／邀请
+ * 加群请求事件
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class CQGroupRequestEvent extends CQRequestEvent {
     /**
-     * 请求子类型，分别表示加群请求、邀请机器人入群
+     * 请求子类型：add 表示用户加群申请，invite 表示邀请机器人入群
      */
     @JSONField(name = "sub_type")
-    private String subType;
+    private GroupRequestSubType subType;
     /**
      * 群号
      */

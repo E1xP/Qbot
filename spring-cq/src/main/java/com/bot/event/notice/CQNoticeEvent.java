@@ -2,6 +2,7 @@ package com.bot.event.notice;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.bot.event.CQEvent;
+import com.bot.event.enums.NoticeType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -12,7 +13,7 @@ public class CQNoticeEvent extends CQEvent {
      * 通知类型
      */
     @JSONField(name = "notice_type")
-    private String noticeType;
+    private NoticeType noticeType;
     /**
      * 上传文件者QQ
      * 被任命管理员QQ
