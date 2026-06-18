@@ -1,6 +1,7 @@
 package com.bot.main.plugin;
 
 import com.bot.entity.CQUser;
+import com.bot.event.enums.GroupRequestSubType;
 import com.bot.event.message.CQGroupMessageEvent;
 import com.bot.event.message.CQPrivateMessageEvent;
 import com.bot.event.request.CQGroupRequestEvent;
@@ -57,7 +58,7 @@ public class BaseRespondPlugin extends CQPlugin {
     ArrayList<Long> lastFiveTime = new ArrayList<>();
 
     /**
-     * 允许加入群列表
+     * 允许机器人接受加群邀请的群列表
      */
     List<Long> allowJoinGroupList = new ArrayList<>();
 
@@ -72,12 +73,16 @@ public class BaseRespondPlugin extends CQPlugin {
 
     @Override
     public int onGroupRequest(CoolQ cq, CQGroupRequestEvent event) {
-        boolean approve = false;
-        if (allowJoinGroupList.contains(event.getGroupId())) {
-            approve = true;
-            cq.sendPrivateMsg(botConfig.getAdmins().get(0), "已允许" + event.getGroupId() + "加群邀请", true);
+        if (event.getSubType() != GroupRequestSubType.INVITE) {
+            return MESSAGE_IGNORE;
+        }
+        boolean approve = allowJoinGroupList.contains(event.getGroupId());
+        if (approve) {
+            cq.sendPrivateMsg(botConfig.getAdmins().get(0),
+                    "已接受用户[" + event.getUserId() + "]邀请加入群[" + event.getGroupId() + "]", true);
         } else {
-            cq.sendPrivateMsg(botConfig.getAdmins().get(0), "已拒绝" + event.getGroupId() + "加群邀请", true);
+            cq.sendPrivateMsg(botConfig.getAdmins().get(0),
+                    "已拒绝用户[" + event.getUserId() + "]邀请加入群[" + event.getGroupId() + "]", true);
         }
         cq.setGroupAddRequest(event.getFlag(), event.getSubType(), approve, "");
         return MESSAGE_BLOCK;
@@ -218,10 +223,10 @@ public class BaseRespondPlugin extends CQPlugin {
     /*收到私聊消息*/
 
     /**
-     * 收到到私聊-加入群
+     * 收到私聊指令-允许机器人接受指定群的加群邀请
      *
      * @param cq    cqBot实体类
-     * @param event 群消息事件
+     * @param event 私聊消息事件
      */
     private void onJoinGroupPrivateMessage(CoolQ cq, CQPrivateMessageEvent event) {
         CQUser sender = event.getSender();
@@ -239,9 +244,9 @@ public class BaseRespondPlugin extends CQPlugin {
             }
             if (!allowJoinGroupList.contains(groupId)) {
                 allowJoinGroupList.add(groupId);
-                cq.sendPrivateMsg(event.getUserId(), "成功允许加入群:" + groupId, true);
+                cq.sendPrivateMsg(event.getUserId(), "成功允许接受群[" + groupId + "]的加群邀请", true);
             } else {
-                cq.sendPrivateMsg(event.getUserId(), "已经允许过加入群:" + groupId, true);
+                cq.sendPrivateMsg(event.getUserId(), "群[" + groupId + "]已配置为允许接受加群邀请", true);
             }
         }
     }
