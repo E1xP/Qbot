@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 命中后的处置：白名单、撤回、禁言、告警群通知。
+ * 命中后的处置：白名单、撤回、违规提示、禁言、告警群通知。
  * <p>
  * 告警正文发文字消息；违规图通过合并转发节点发送，避免在普通消息里直接 {@code [CQ:image]}。
  */
@@ -118,9 +118,29 @@ public class ModerationActionService {
      */
     public void replyRecallFailed(CoolQ cq, long groupId, int messageId,
                                   ModerationVerdict verdict, String savedImageName) {
+        replyRefineTip(cq, groupId, messageId, verdict, savedImageName,
+                "【群审·精判】消息撤回失败，请管理员手动处理\n",
+                "撤回失败已回复精判提醒",
+                "撤回失败回复提醒发送失败");
+    }
+
+    /**
+     * 命中违规图时回复原消息，附带精判触发项与检测/聚合信息（格式同撤回失败提醒）。
+     */
+    public void replyViolationTip(CoolQ cq, long groupId, int messageId,
+                                  ModerationVerdict verdict, String savedImageName) {
+        replyRefineTip(cq, groupId, messageId, verdict, savedImageName,
+                "【群审·精判】检测到违规图片\n",
+                "违规提示已回复",
+                "违规提示回复发送失败");
+    }
+
+    private void replyRefineTip(CoolQ cq, long groupId, int messageId,
+                                ModerationVerdict verdict, String savedImageName,
+                                String header, String successLog, String failLog) {
         StringBuilder message = new StringBuilder();
         message.append(CQCodeExtend.reply(messageId));
-        message.append("【群审·精判】消息撤回失败，请管理员手动处理\n");
+        message.append(header);
         if (verdict != null) {
             String refineText = verdict.refineActionText(false);
             if (refineText != null && !refineText.isEmpty()) {
@@ -129,9 +149,9 @@ public class ModerationActionService {
         }
         try {
             cq.sendGroupMsg(groupId, message.toString(), false);
-            log.info("撤回失败已回复精判提醒 groupId={} messageId={} savedImage={}", groupId, messageId, savedImageName);
+            log.info("{} groupId={} messageId={} savedImage={}", successLog, groupId, messageId, savedImageName);
         } catch (Exception e) {
-            log.warn("撤回失败回复提醒发送失败 groupId={} messageId={} savedImage={}", groupId, messageId, savedImageName, e);
+            log.warn("{} groupId={} messageId={} savedImage={}", failLog, groupId, messageId, savedImageName, e);
         }
     }
 

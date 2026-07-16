@@ -454,6 +454,7 @@ public class GroupModerationService {
             return;
         }
 
+        boolean recallFailedReplied = false;
         if (groupConfig.isRecallEnable()) {
             boolean recalled = moderationActionService.recall(
                     cq, task.getMessageId(), task.getGroupId(), task.getUserId(), task.getSenderNickname(),
@@ -463,7 +464,14 @@ public class GroupModerationService {
                 moderationActionService.replyRecallFailed(
                         cq, task.getGroupId(), task.getMessageId(), bestVerdict,
                         formatSavedImageName(bestSavedImage));
+                recallFailedReplied = true;
             }
+        }
+        // tip-enable 默认关闭；撤回失败已回复时跳过，避免重复精判文案
+        if (groupConfig.isTipEnable() && !recallFailedReplied) {
+            moderationActionService.replyViolationTip(
+                    cq, task.getGroupId(), task.getMessageId(), bestVerdict,
+                    formatSavedImageName(bestSavedImage));
         }
         if (groupConfig.isBanEnable() && moderationActionService.botCanBan(cq, task.getGroupId())) {
             moderationActionService.ban(cq, task.getGroupId(), task.getUserId(), groupConfig.getBanDurationSeconds());

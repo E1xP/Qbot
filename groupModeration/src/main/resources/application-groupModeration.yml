@@ -38,6 +38,8 @@ group-moderation:
       ban-enable: false
       ban-duration-seconds: 600
       recall-enable: true
+      # 命中后是否在原群回复违规提示（默认 false）
+      tip-enable: false
       save-enable: true
       notify-enable: false
       notify-group-id: 0

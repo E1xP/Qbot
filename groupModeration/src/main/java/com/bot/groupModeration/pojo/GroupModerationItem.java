@@ -37,6 +37,12 @@ public class GroupModerationItem {
     private boolean recallEnable;
 
     /**
+     * 命中后是否在原群回复违规提示（格式同撤回失败提醒）。默认不回复。
+     * 若同时开启撤回且撤回失败，仅发送撤回失败提醒，避免重复。
+     */
+    private boolean tipEnable = false;
+
+    /**
      * 命中后是否将图片保存到 storage-base-path/{群号}/ 下
      */
     private boolean saveEnable = true;
