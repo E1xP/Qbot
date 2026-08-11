@@ -1,6 +1,7 @@
 package com.bot.event.notice;
 
 import com.alibaba.fastjson.annotation.JSONField;
+import com.bot.event.enums.GroupBanSubType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -15,7 +16,7 @@ public class CQGroupBanNoticeEvent extends CQNoticeEvent {
      * ban、lift_ban分别表示禁言、解除禁言
      */
     @JSONField(name = "sub_type")
-    private String subType;
+    private GroupBanSubType subType;
     /**
      * 群号
      */

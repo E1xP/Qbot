@@ -1,6 +1,7 @@
 package com.bot.event.notice;
 
 import com.alibaba.fastjson.annotation.JSONField;
+import com.bot.event.enums.GroupAdminSubType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -15,7 +16,7 @@ public class CQGroupAdminNoticeEvent extends CQNoticeEvent {
      * set unset分别表示设置和取消管理员
      */
     @JSONField(name = "sub_type")
-    private String subType;
+    private GroupAdminSubType subType;
     /**
      * 群号
      */

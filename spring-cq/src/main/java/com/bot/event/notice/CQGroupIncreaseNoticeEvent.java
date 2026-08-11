@@ -1,6 +1,7 @@
 package com.bot.event.notice;
 
 import com.alibaba.fastjson.annotation.JSONField;
+import com.bot.event.enums.GroupIncreaseSubType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -15,7 +16,7 @@ public class CQGroupIncreaseNoticeEvent extends CQNoticeEvent {
      * approve、invite分别表示管理员已同意入群、管理员邀请入群
      */
     @JSONField(name = "sub_type")
-    private String subType;
+    private GroupIncreaseSubType subType;
     /**
      * 群号
      */

@@ -1,6 +1,7 @@
 package com.bot.event.notice;
 
 import com.alibaba.fastjson.annotation.JSONField;
+import com.bot.event.enums.GroupDecreaseSubType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -15,7 +16,7 @@ public class CQGroupDecreaseNoticeEvent extends CQNoticeEvent {
      * leave、kick、kick_me分别表示主动退群、成员被踢、机器人自己被踢
      */
     @JSONField(name = "sub_type")
-    private String subType;
+    private GroupDecreaseSubType subType;
     /**
      * 群号
      */

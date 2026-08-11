@@ -2,6 +2,7 @@ package com.bot.event.request;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.bot.event.CQEvent;
+import com.bot.event.enums.RequestType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -13,7 +14,7 @@ public class CQRequestEvent extends CQEvent {
      * group/friend
      */
     @JSONField(name = "request_type")
-    private String requestType;
+    private RequestType requestType;
     /**
      * 发送请求的 QQ 号
      */

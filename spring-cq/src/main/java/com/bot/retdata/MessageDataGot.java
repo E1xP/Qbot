@@ -2,6 +2,7 @@ package com.bot.retdata;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.bot.entity.CQUser;
+import com.bot.event.enums.MessageType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -36,7 +37,7 @@ public class MessageDataGot extends MessageData {
      * 群消息时为group, 私聊消息为private
      */
     @JSONField(name = "message_type")
-    private String messageType;
+    private MessageType messageType;
     /**
      * 发送人信息
      */

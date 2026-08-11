@@ -2,6 +2,7 @@ package com.bot.logService.plugin;
 
 import com.bot.entity.CQFile;
 import com.bot.entity.CQUser;
+import com.bot.event.enums.*;
 import com.bot.event.message.CQGroupMessageEvent;
 import com.bot.event.message.CQPrivateMessageEvent;
 import com.bot.event.notice.*;
@@ -145,18 +146,16 @@ public class LogPlugin extends CQPlugin {
         long groupId = event.getGroupId();
         info.append(getGroupName(cq, groupId));
         //消息内容
-        String subType = event.getSubType();
-        switch (subType) {
-            case "set": {
+        GroupAdminSubType subType = event.getSubType();
+        if (subType == null) {
+            info.append("未知类型: ");
+        } else switch (subType) {
+            case SET:
                 info.append("设置管理员: ");
                 break;
-            }
-            case "unset": {
+            case UNSET:
                 info.append("取消管理员: ");
                 break;
-            }
-            default:
-                info.append("未知类型[").append(subType).append("]: ");
         }
 
         long userId = event.getUserId();
@@ -178,26 +177,24 @@ public class LogPlugin extends CQPlugin {
         long operatorId = event.getOperatorId();
         long userId = event.getUserId();
 
-        String subType = event.getSubType();
-        switch (subType) {
-            case "leave": {
+        GroupDecreaseSubType subType = event.getSubType();
+        if (subType == null) {
+            info.append("未知类型 ");
+        } else switch (subType) {
+            case LEAVE:
                 info.append(getGroupUserInfo(cq, groupId, userId)).append("退群");
                 break;
-            }
-            case "kick": {
+            case KICK:
                 info.append(getGroupUserInfo(cq, groupId, userId))
                         .append("被管理员 ")
                         .append(getGroupUserInfo(cq, groupId, operatorId))
                         .append("踢出");
                 break;
-            }
-            case "kick_me": {
+            case KICK_ME:
                 info.append("本号被管理员 ")
                         .append(getGroupUserInfo(cq, groupId, operatorId))
                         .append("踢出群聊");
-            }
-            default:
-                info.append("未知类型[").append(subType).append("] ");
+                break;
         }
 
         log.info(info.toString());
@@ -216,18 +213,16 @@ public class LogPlugin extends CQPlugin {
         long operatorId = event.getOperatorId();
         info.append(getGroupUserInfo(cq, groupId, operatorId));
 
-        String subType = event.getSubType();
-        switch (subType) {
-            case "approve": {
+        GroupIncreaseSubType subType = event.getSubType();
+        if (subType == null) {
+            info.append("未知类型 ");
+        } else switch (subType) {
+            case APPROVE:
                 info.append("同意 ");
                 break;
-            }
-            case "invite": {
+            case INVITE:
                 info.append("邀请 ");
                 break;
-            }
-            default:
-                info.append("未知类型[").append(subType).append("] ");
         }
 
         long userId = event.getUserId();
@@ -246,12 +241,14 @@ public class LogPlugin extends CQPlugin {
         long groupId = event.getGroupId();
         info.append(getGroupName(cq, groupId));
         //消息内容
-        String subType = event.getSubType();
+        GroupBanSubType subType = event.getSubType();
         long operatorId = event.getOperatorId();
         long userId = event.getUserId();
         long duration = event.getDuration();
-        switch (subType) {
-            case "ban": {
+        if (subType == null) {
+            info.append("未知类型 ");
+        } else switch (subType) {
+            case BAN:
                 if (userId == 0) {
                     info.append("全员禁言");
                 } else {
@@ -262,8 +259,7 @@ public class LogPlugin extends CQPlugin {
                             .append(getFormateTime(duration));
                 }
                 break;
-            }
-            case "lift_ban": {
+            case LIFT_BAN:
                 if (userId == 0) {
                     info.append("解除全员禁言");
                 } else {
@@ -273,9 +269,6 @@ public class LogPlugin extends CQPlugin {
                             .append("解除禁言 ");
                 }
                 break;
-            }
-            default:
-                info.append("未知类型[").append(subType).append("] ");
         }
 
         log.info(info.toString());
@@ -306,24 +299,22 @@ public class LogPlugin extends CQPlugin {
     public int onGroupRequest(CoolQ cq, CQGroupRequestEvent event) {
         StringBuilder info = new StringBuilder();
         info.append(getBotInfo(cq));
-        info.append("收到 <- 加群邀请/请求 ");
+        info.append("收到 <- 加群请求 ");
         //群名称
         long groupId = event.getGroupId();
         info.append(getGroupName(cq, groupId));
         //消息内容
-        String subType = event.getSubType();
+        GroupRequestSubType subType = event.getSubType();
         long userId = event.getUserId();
-        switch (subType) {
-            case "add": {
+        if (subType == null) {
+            info.append("未知类型: ");
+        } else switch (subType) {
+            case ADD:
                 info.append("用户: [").append(userId).append("] 请求加入群: [").append(groupId).append("]:").append(event.getComment());
                 break;
-            }
-            case "invite": {
+            case INVITE:
                 info.append("用户: [").append(userId).append("] 邀请加入群: [").append(groupId).append("]");
                 break;
-            }
-            default:
-                info.append("未知类型[").append(subType).append("]: ");
         }
 
         log.info(info.toString());

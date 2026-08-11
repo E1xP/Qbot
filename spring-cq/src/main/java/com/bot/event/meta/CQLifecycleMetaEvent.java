@@ -1,6 +1,7 @@
 package com.bot.event.meta;
 
 import com.alibaba.fastjson.annotation.JSONField;
+import com.bot.event.enums.LifecycleSubType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -15,5 +16,5 @@ public class CQLifecycleMetaEvent extends CQMetaEvent {
      * enable、disable、connect分别表示插件启用、插件停用、WebSocket 连接成功
      */
     @JSONField(name = "sub_type")
-    private String subType;
+    private LifecycleSubType subType;
 }

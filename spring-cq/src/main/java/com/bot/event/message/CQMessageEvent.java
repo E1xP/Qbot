@@ -2,6 +2,7 @@ package com.bot.event.message;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.bot.event.CQEvent;
+import com.bot.event.enums.MessageType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -12,7 +13,7 @@ public class CQMessageEvent extends CQEvent {
      * 消息类型
      */
     @JSONField(name = "message_type")
-    private String messageType;
+    private MessageType messageType;
     /**
      * 消息 ID
      */
