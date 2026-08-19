@@ -1,5 +1,6 @@
 package com.bot.rsshubqq.pojo;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.Data;
 
 /**
@@ -19,6 +20,7 @@ public class DeeplTranslateResult {
     /**
      * 错误消息
      */
+    @JsonAlias("message")
     String msg;
     /**
      * 翻译结果

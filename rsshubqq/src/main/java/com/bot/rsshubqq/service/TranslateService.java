@@ -92,7 +92,7 @@ public class TranslateService {
         requestMap.put("target_lang", to);
         HttpEntity<JSONObject> httpEntity = new HttpEntity<>(requestMap, headers);
 
-        log.debug("翻译构造的URI为：" + translateConfig.getUrl() + requestMap.toString());
+        log.debug("翻译构造的URI为：" + translateConfig.getUrl() + requestMap);
         RestTemplate restTemplate = getRestTemplate();
         DeeplTranslateResult result = null;
         try {
@@ -101,14 +101,14 @@ public class TranslateService {
             log.error("翻译错误:" + e.getMessage());
             return null;
         }
-        if (result != null && result.getCode() == 200) {
+        if (result != null && result.getData() != null && !result.getData().isEmpty()) {
             String data = result.getData();
             data = data.replace("<br>", "\n") + "\n";
             return data;
-        } else {
+        } else if (result != null) {
             log.error("翻译错误:" + result.getCode() + " " + result.getMsg());
-            return null;
         }
+        return null;
     }
 
     private static RestTemplate getRestTemplate() {
