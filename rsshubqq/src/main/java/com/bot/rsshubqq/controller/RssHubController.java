@@ -109,7 +109,7 @@ public class RssHubController {
             }
 
             // 发送恢复通知
-            if (rsshubFeedConfig.isBranchErrorInfo() && errorCount > rsshubFeedConfig.getBranchErrorInfoCount()) {
+            if (rsshubFeedConfig.isBranchErrorInfo() && errorCount >= rsshubFeedConfig.getBranchErrorInfoCount()) {
                 earlyWarningService.sendEarlyWarning(
                         "RssHub-" + branchName + "抓取恢复",
                         "RssHub-" + branchName + ":抓取错误已恢复"
