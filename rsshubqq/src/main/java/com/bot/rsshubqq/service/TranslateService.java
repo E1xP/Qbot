@@ -11,11 +11,12 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -66,26 +67,46 @@ public class TranslateService {
     }
 
     private static String baidu(String message, String from, String to, TranslateConfig.Api api) {
-        //构造请求参数（签名用原文；POST form 编码由 RestTemplate 处理，避免长文本 GET 截断导致 54001）
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("q", message);
-        params.add("from", from);
-        params.add("to", to);
-        params.add("appid", api.getAppId());
+        // 签名用未编码原文；body 按官方 demo 手动 URLEncoder(UTF-8)，避免凭证空白/null 拼接与 form 编码不一致
+        String appId = trimToEmpty(api.getAppId());
+        String securityKey = trimToEmpty(api.getSecurityKey());
+        String url = trimToEmpty(api.getUrl());
+        if (appId.isEmpty() || securityKey.isEmpty() || url.isEmpty()) {
+            log.error("翻译错误[{}]:appId/securityKey/url未配置或为空", api.getApiName());
+            return null;
+        }
+        if (message == null) {
+            message = "";
+        }
+
         String salt = String.valueOf(System.currentTimeMillis());
-        params.add("salt", salt);
-        String src = api.getAppId() + message + salt + api.getSecurityKey();
-        params.add("sign", MD5.md5(src));
+        String sign = MD5.md5(appId + message + salt + securityKey);
+        if (sign == null) {
+            log.error("翻译错误[{}]:签名计算失败", api.getApiName());
+            return null;
+        }
+
+        final String body;
+        try {
+            body = "q=" + URLEncoder.encode(message, "UTF-8")
+                    + "&from=" + URLEncoder.encode(from, "UTF-8")
+                    + "&to=" + URLEncoder.encode(to, "UTF-8")
+                    + "&appid=" + URLEncoder.encode(appId, "UTF-8")
+                    + "&salt=" + URLEncoder.encode(salt, "UTF-8")
+                    + "&sign=" + URLEncoder.encode(sign, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            log.error("翻译错误[{}]:{}", api.getApiName(), e.getMessage());
+            return null;
+        }
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(params, headers);
+        headers.setContentType(new MediaType("application", "x-www-form-urlencoded", StandardCharsets.UTF_8));
+        HttpEntity<String> httpEntity = new HttpEntity<>(body, headers);
 
-        log.debug("翻译POST：{}，q长度：{}", api.getUrl(), message.length());
-        RestTemplate restTemplate = getRestTemplate();
+        log.debug("翻译POST：{}，appId：{}，q长度：{}", url, appId, message.length());
         BaiduTranslateResult result;
         try {
-            result = restTemplate.postForObject(api.getUrl(), httpEntity, BaiduTranslateResult.class);
+            result = getRestTemplate().postForObject(url, httpEntity, BaiduTranslateResult.class);
         } catch (RestClientException e) {
             log.error("翻译错误[{}]:{}", api.getApiName(), e.getMessage());
             return null;
@@ -104,6 +125,10 @@ public class TranslateService {
             log.error("翻译错误[{}]:空响应", api.getApiName());
         }
         return null;
+    }
+
+    private static String trimToEmpty(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private static String deeplServerless(String message, String from, String to, TranslateConfig.Api api) {
