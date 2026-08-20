@@ -137,7 +137,6 @@ public class TranslateService {
         headers.setContentType(mediaType);
         headers.add("Accept", MediaType.APPLICATION_JSON.toString());
         JSONObject requestMap = new JSONObject();
-        message = message.replace("\n", "<br>");
         requestMap.put("text", message);
         requestMap.put("source_lang", from);
         requestMap.put("target_lang", to);
@@ -153,9 +152,7 @@ public class TranslateService {
             return null;
         }
         if (result != null && result.getData() != null && !result.getData().isEmpty()) {
-            String data = result.getData();
-            data = data.replace("<br>", "\n") + "\n";
-            return data;
+            return result.getData() + "\n";
         } else if (result != null) {
             log.error("翻译错误[{}]:{} {}", api.getApiName(), result.getCode(), result.getMsg());
         }
