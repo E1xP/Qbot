@@ -2,11 +2,14 @@
   level:
     com.bot.rsshubqq: debug
 translate:
-  appId: ""          #翻译app应用id
-  securityKey: "" #翻译app对应的密钥
-  url: "http://127.0.0.1:8000/translate"  #翻译接口url
   targetLanguage: "zh"  #翻译目标语言
-  apiName: "baidu"      #使用api名称
+  apiList:              #按顺序尝试，失败则用下一个
+    - apiName: baidu
+      appId: ""          #翻译app应用id
+      securityKey: ""    #翻译app对应的密钥
+      url: "https://fanyi-api.baidu.com/api/trans/vip/translate"
+    - apiName: deepl-serverless
+      url: "http://127.0.0.1:8000/translate"
 rsshub:
   downloadFailNotify: true #是否在图片下载失败时通知
   downloadFailNotifier: 451060876 #图片下载失败通知

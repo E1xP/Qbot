@@ -18,6 +18,7 @@ public class BaiduTranslateResult {
     String from;
     String to;
     int error_code = 0;
+    String error_msg;
     ArrayList<HashMap<String, String>> trans_result;
 
     public BaiduTranslateResult() {
