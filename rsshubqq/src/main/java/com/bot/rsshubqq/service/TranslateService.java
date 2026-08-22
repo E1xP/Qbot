@@ -1,6 +1,7 @@
 package com.bot.rsshubqq.service;
 
 import com.alibaba.fastjson.JSONObject;
+import com.bot.rsshubqq.config.RsshubConfig;
 import com.bot.rsshubqq.config.TranslateApiName;
 import com.bot.rsshubqq.config.TranslateConfig;
 import com.bot.rsshubqq.pojo.BaiduTranslateResult;
@@ -15,6 +16,8 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.UnsupportedEncodingException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -30,7 +33,7 @@ import java.util.Map;
  **/
 @Slf4j
 public class TranslateService {
-    public static String translate(String message, String from, String to, TranslateConfig translateConfig) {
+    public static String translate(String message, String from, String to, TranslateConfig translateConfig, RsshubConfig rsshubConfig) {
         List<TranslateConfig.Api> apiList = translateConfig.getApiList();
         if (apiList == null || apiList.isEmpty()) {
             log.error("翻译api列表未配置");
@@ -40,16 +43,17 @@ public class TranslateService {
             TranslateConfig.Api api = apiList.get(i);
             TranslateApiName apiName = api.getApiName();
             log.debug("尝试翻译接口[{}/{}]：{}", i + 1, apiList.size(), apiName);
+            RestTemplate restTemplate = getRestTemplate(api.isProxy(), rsshubConfig);
             String result = null;
             if (apiName == null) {
                 log.error("翻译api配置错误：apiName为空");
             } else {
                 switch (apiName) {
                     case BAIDU:
-                        result = baidu(message, from, to, api);
+                        result = baidu(message, from, to, api, restTemplate);
                         break;
                     case DEEPL_SERVERLESS:
-                        result = deeplServerless(message, from, to, api);
+                        result = deeplServerless(message, from, to, api, restTemplate);
                         break;
                     default:
                         log.error("翻译api配置错误：" + apiName);
@@ -66,7 +70,7 @@ public class TranslateService {
         return null;
     }
 
-    private static String baidu(String message, String from, String to, TranslateConfig.Api api) {
+    private static String baidu(String message, String from, String to, TranslateConfig.Api api, RestTemplate restTemplate) {
         // 签名用未编码原文；body 按官方 demo 手动 URLEncoder(UTF-8)，避免凭证空白/null 拼接与 form 编码不一致
         String appId = trimToEmpty(api.getAppId());
         String securityKey = trimToEmpty(api.getSecurityKey());
@@ -106,7 +110,7 @@ public class TranslateService {
         log.debug("翻译POST：{}，appId：{}，q长度：{}", url, appId, message.length());
         BaiduTranslateResult result;
         try {
-            result = getRestTemplate().postForObject(url, httpEntity, BaiduTranslateResult.class);
+            result = restTemplate.postForObject(url, httpEntity, BaiduTranslateResult.class);
         } catch (RestClientException e) {
             log.error("翻译错误[{}]:{}", api.getApiName(), e.getMessage());
             return null;
@@ -131,7 +135,7 @@ public class TranslateService {
         return value == null ? "" : value.trim();
     }
 
-    private static String deeplServerless(String message, String from, String to, TranslateConfig.Api api) {
+    private static String deeplServerless(String message, String from, String to, TranslateConfig.Api api, RestTemplate restTemplate) {
         HttpHeaders headers = new HttpHeaders();
         MediaType mediaType = MediaType.parseMediaType("application/json");
         headers.setContentType(mediaType);
@@ -143,7 +147,6 @@ public class TranslateService {
         HttpEntity<JSONObject> httpEntity = new HttpEntity<>(requestMap, headers);
 
         log.debug("翻译构造的URI为：" + api.getUrl() + requestMap);
-        RestTemplate restTemplate = getRestTemplate();
         DeeplTranslateResult result;
         try {
             result = restTemplate.postForObject(api.getUrl(), httpEntity, DeeplTranslateResult.class);
@@ -159,11 +162,18 @@ public class TranslateService {
         return null;
     }
 
-    private static RestTemplate getRestTemplate() {
+    private static RestTemplate getRestTemplate(boolean useProxy, RsshubConfig rsshubConfig) {
         RestTemplate restTemplate = new RestTemplate();
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(2 * 1000);
         requestFactory.setReadTimeout(20 * 1000);
+        if (useProxy && rsshubConfig != null) {
+            requestFactory.setProxy(new Proxy(Proxy.Type.HTTP,
+                    new InetSocketAddress(
+                            (rsshubConfig.getProxyUrl() != null && !rsshubConfig.getProxyUrl().isEmpty()
+                                    ? rsshubConfig.getProxyUrl() : "127.0.0.1"),
+                            rsshubConfig.getProxyPort())));
+        }
         restTemplate.setRequestFactory(requestFactory);
         return restTemplate;
     }

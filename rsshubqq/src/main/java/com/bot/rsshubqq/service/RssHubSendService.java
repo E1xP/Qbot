@@ -295,7 +295,7 @@ public class RssHubSendService implements Runnable {
      * @return 翻译后的文本
      */
     private String translate(String message){
-        return TranslateService.translate(message, "auto", translateConfig.getTargetLanguage(), translateConfig);
+        return TranslateService.translate(message, "auto", translateConfig.getTargetLanguage(), translateConfig, rsshubConfig);
     }
 
     /**

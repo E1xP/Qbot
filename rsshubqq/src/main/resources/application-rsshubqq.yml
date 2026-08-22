@@ -1,4 +1,4 @@
-﻿logging:
+logging:
   level:
     com.bot.rsshubqq: debug
 translate:
@@ -8,6 +8,7 @@ translate:
       appId: ""          #翻译app应用id
       securityKey: ""    #翻译app对应的密钥
       url: "https://fanyi-api.baidu.com/api/trans/vip/translate"
+      # proxy: false     #本接口是否走代理，不填默认不代理
     - apiName: deepl-serverless
       url: "http://127.0.0.1:8000/translate"
 rsshub:

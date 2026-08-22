@@ -1,5 +1,6 @@
 package com.bot.main;
 
+import com.bot.rsshubqq.config.RsshubConfig;
 import com.bot.rsshubqq.config.TranslateConfig;
 import com.bot.rsshubqq.service.TranslateService;
 import org.junit.jupiter.api.Test;
@@ -20,9 +21,12 @@ public class TranslateTest {
     @Resource
     TranslateConfig translateConfig;
 
+    @Resource
+    RsshubConfig rsshubConfig;
+
     @Test
     void translate() {
-        String translate = TranslateService.translate("Test\ntest1\ntest2", "auto", "zh", translateConfig);
+        String translate = TranslateService.translate("Test\ntest1\ntest2", "auto", "zh", translateConfig, rsshubConfig);
         System.out.println(translate);
     }
 }

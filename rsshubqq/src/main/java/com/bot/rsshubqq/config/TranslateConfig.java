@@ -47,5 +47,9 @@ public class TranslateConfig {
          * 翻译接口url
          */
         String url;
+        /**
+         * 本接口是否走 HTTP 代理（复用 rsshub.proxyUrl / proxyPort），默认不代理
+         */
+        boolean proxy;
     }
 }
